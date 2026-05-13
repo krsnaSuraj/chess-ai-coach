@@ -303,7 +303,7 @@ async function undoMove() {
     if (STATE.busy) return;
     STATE.busy = true;
     try {
-        const data = await apiCall('/api/undo');
+        const data = await apiCall('/api/undo', {});
         processResponse(data);
     } catch (e) { handleError(e); }
     finally { STATE.busy = false; }
@@ -313,7 +313,7 @@ async function redoMove() {
     if (STATE.busy) return;
     STATE.busy = true;
     try {
-        const data = await apiCall('/api/redo');
+        const data = await apiCall('/api/redo', {});
         processResponse(data);
     } catch (e) { handleError(e); }
     finally { STATE.busy = false; }
