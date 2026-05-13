@@ -1,5 +1,5 @@
 @echo off
-title Chess AI Coach - Update Tool
+title Chess AI Coach - GitHub Update Tool
 cd /d "%~dp0"
 
 echo ========================================
@@ -18,7 +18,7 @@ git remote get-url origin >nul 2>&1
 if %errorlevel% neq 0 (
     echo [FIRST TIME SETUP]
     echo.
-    echo Create a repository on GitHub:
+    echo Create a repository on GitHub first:
     echo   Step 1: Go to https://github.com/new
     echo   Step 2: Repository name: chess-ai-coach
     echo   Step 3: Click "Create repository"
@@ -33,26 +33,42 @@ if %errorlevel% neq 0 (
     echo.
     git push -u origin main
     if %errorlevel% equ 0 (
-        echo.
         echo SUCCESS! Project published on GitHub.
     ) else (
-        echo.
         echo ERROR: Push failed. Make sure the URL is correct.
     )
     pause
     exit /b
 )
 
-echo Checking for changes...
-git add -A
+REM Check for unpushed commits
+git log origin/main..HEAD --oneline > ._unpushed.txt 2>&1
+set unpushed=0
+for %%a in (._unpushed.txt) do if %%~za gtr 0 set unpushed=1
 
+REM Check for unstaged changes
+git add -A
 git diff --cached --stat --name-only > ._changes.txt
 set has_changes=0
 for %%a in (._changes.txt) do if %%~za gtr 0 set has_changes=1
-del ._changes.txt 2>nul
 
 if %has_changes% equ 0 (
-    echo No changes detected. Everything is up to date.
+    if %unpushed% equ 0 (
+        echo Everything is up to date. No changes to push.
+        del ._unpushed.txt ._changes.txt 2>nul
+        pause
+        exit /b
+    )
+    echo.
+    echo Found %unpushed% unpushed commit(s). Pushing to GitHub...
+    echo.
+    git push
+    if %errorlevel% equ 0 (
+        echo SUCCESS! Pushed to GitHub.
+    ) else (
+        echo ERROR: Push failed.
+    )
+    del ._unpushed.txt ._changes.txt 2>nul
     pause
     exit /b
 )
@@ -76,4 +92,5 @@ if %errorlevel% equ 0 (
     echo Only the original maintainer can push updates to this repository.
 )
 
+del ._unpushed.txt ._changes.txt 2>nul
 pause
