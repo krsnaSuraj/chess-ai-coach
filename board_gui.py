@@ -327,6 +327,8 @@ class ChessBoard(QWidget):
     def mousePressEvent(self, event):
         if event.button() != Qt.MouseButton.LeftButton:
             return
+        if self.board.is_game_over():
+            return
 
         pos = event.position()
         col, row, sq, ox, oy = self._board_coords(pos)
@@ -728,9 +730,14 @@ class MainWindow(QMainWindow):
             self.last_known_move = None
             self.redo_stack.clear()
 
+            suffix = ""
+            if self.board.is_checkmate():
+                suffix = "#"
+            elif self.board.is_check():
+                suffix = "+"
             move_num = (len(self.board.move_stack) + 1) // 2
             turn = "W" if self.board.turn == chess.BLACK else "B"
-            item_text = f"{move_num}{turn}  {san}"
+            item_text = f"{move_num}{turn}  {san}{suffix}"
             self.move_list.addItem(item_text)
             self.move_list.scrollToBottom()
             self._undo_san = (move, item_text)
@@ -829,38 +836,48 @@ class MainWindow(QMainWindow):
         turn_name = "White" if self.board.turn == chess.WHITE else "Black"
         if self.board.is_checkmate():
             winner = "Black" if self.board.turn == chess.WHITE else "White"
-            self.lbl_turn.setText(f"Checkmate! {winner} wins")
+            self.lbl_turn.setText(f"# Checkmate! {winner} wins")
             self.lbl_turn.setStyleSheet(f"""
-                color: {COLORS['green']}; font-size: 12px; font-weight: bold;
-                padding: 4px; border: 1px solid {COLORS['green']}; border-radius: 4px;
+                background-color: {COLORS['green']}; color: white; font-size: 13px; font-weight: bold;
+                padding: 6px; border: 2px solid {COLORS['green']}; border-radius: 4px;
             """)
+            self.lbl_info.setText("Game Over  |  Checkmate")
         elif self.board.is_stalemate():
             self.lbl_turn.setText("Stalemate! Draw")
             self.lbl_turn.setStyleSheet(f"""
                 color: {COLORS['yellow']}; font-size: 12px; font-weight: bold;
                 padding: 4px; border: 1px solid {COLORS['yellow']}; border-radius: 4px;
             """)
+            self.lbl_info.setText("Game Over  |  Stalemate")
+        elif self.board.is_insufficient_material():
+            self.lbl_turn.setText("Draw! Insufficient material")
+            self.lbl_turn.setStyleSheet(f"""
+                color: {COLORS['yellow']}; font-size: 12px; font-weight: bold;
+                padding: 4px; border: 1px solid {COLORS['yellow']}; border-radius: 4px;
+            """)
+            self.lbl_info.setText("Game Over  |  Draw")
         elif self.board.is_check():
             self.lbl_turn.setText(f"{turn_name} is in check!")
             self.lbl_turn.setStyleSheet(f"""
                 color: {COLORS['red']}; font-size: 12px; font-weight: bold;
                 padding: 4px; border: 1px solid {COLORS['red']}; border-radius: 4px;
             """)
+            move_count = len(self.board.move_stack) // 2 + 1
+            self.lbl_info.setText(f"Move {move_count}  |  Check!")
         else:
             self.lbl_turn.setText(f"{turn_name} to move")
             self.lbl_turn.setStyleSheet(f"""
                 color: {COLORS['accent']}; font-size: 12px; font-weight: bold;
                 padding: 4px; border: 1px solid {COLORS['border']}; border-radius: 4px;
             """)
-
-        move_count = len(self.board.move_stack) // 2 + 1
-        game_phase = "Opening"
-        total_moves = len(self.board.move_stack)
-        if total_moves > 40:
-            game_phase = "Endgame"
-        elif total_moves > 15:
-            game_phase = "Middlegame"
-        self.lbl_info.setText(f"Move {move_count}  |  {game_phase}")
+            move_count = len(self.board.move_stack) // 2 + 1
+            game_phase = "Opening"
+            total_moves = len(self.board.move_stack)
+            if total_moves > 40:
+                game_phase = "Endgame"
+            elif total_moves > 15:
+                game_phase = "Middlegame"
+            self.lbl_info.setText(f"Move {move_count}  |  {game_phase}")
 
     def _on_analysis(self, info):
         try:
@@ -1013,14 +1030,50 @@ class MainWindow(QMainWindow):
 
     def _update_feedback(self):
         self._update_turn_display()
-        if self.can_show_coach() and not self.board.is_game_over():
+        if self.board.is_game_over():
+            self.engine_handler.stop_analysis()
+            self.last_known_move = None
+            self.chess_board.set_best_move(None)
+            self.lbl_best.setText("-")
+            self.lbl_pv.setText("")
+            if self.board.is_checkmate():
+                winner = "Black" if self.board.turn == chess.WHITE else "White"
+                self.lbl_feedback.setText(f"Game over! {winner} wins by checkmate.")
+                self.lbl_feedback.setStyleSheet(
+                    f"color: {COLORS['green']}; padding: 10px; font-weight: bold;"
+                    f"background: {COLORS['bg']};"
+                    f"border: 2px solid {COLORS['green']}; border-radius: 4px;"
+                )
+            elif self.board.is_stalemate():
+                self.lbl_feedback.setText("Game over! Stalemate — draw.")
+                self.lbl_feedback.setStyleSheet(
+                    f"color: {COLORS['yellow']}; padding: 10px;"
+                    f"background: {COLORS['bg']};"
+                    f"border: 1px solid {COLORS['yellow']}; border-radius: 4px;"
+                )
+            elif self.board.is_insufficient_material():
+                self.lbl_feedback.setText("Game over! Draw by insufficient material.")
+                self.lbl_feedback.setStyleSheet(
+                    f"color: {COLORS['yellow']}; padding: 10px;"
+                    f"background: {COLORS['bg']};"
+                    f"border: 1px solid {COLORS['yellow']}; border-radius: 4px;"
+                )
+            else:
+                self.lbl_feedback.setText("Game over! Draw.")
+                self.lbl_feedback.setStyleSheet(
+                    f"color: {COLORS['text']}; padding: 10px;"
+                    f"background: {COLORS['bg']};"
+                    f"border: 1px solid {COLORS['border']}; border-radius: 4px;"
+                )
+        elif self.can_show_coach():
             self.run_analysis()
         else:
             self.last_known_move = None
             self.chess_board.set_best_move(None)
             self.lbl_best.setText("-")
             self.lbl_pv.setText("")
-            self.lbl_feedback.setText("Waiting for your turn...")
+            turn_name = "White" if self.board.turn == chess.WHITE else "Black"
+            self.lbl_feedback.setText(f"Waiting — {turn_name}'s turn to play")
             self.lbl_feedback.setStyleSheet(
                 f"color: {COLORS['text']}; padding: 10px;"
                 f"background: {COLORS['bg']};"
