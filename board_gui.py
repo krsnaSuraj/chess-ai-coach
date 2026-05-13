@@ -606,7 +606,7 @@ class MainWindow(QMainWindow):
                 border-top: 1px solid {COLORS['border']};
             }}
         """)
-        self.statusBar().showMessage("by Suraj")
+        self.statusBar().showMessage("Powered by Stockfish 17")
 
         self.run_analysis()
 

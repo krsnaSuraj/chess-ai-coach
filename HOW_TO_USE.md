@@ -11,7 +11,7 @@ Available as a **Desktop GUI** (PyQt6) and **Web App** (FastAPI).
 pip install -r requirements.txt
 ```
 
-### Desktop Mode (recommended)
+### Desktop Mode
 ```bash
 python run.py
 ```

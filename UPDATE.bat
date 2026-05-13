@@ -1,5 +1,5 @@
 @echo off
-title Chess AI Coach - Update Tool
+title Chess AI Coach - GitHub Update Tool
 cd /d "%~dp0"
 
 echo ========================================
@@ -7,43 +7,43 @@ echo    Chess AI Coach - GitHub Update Tool
 echo ========================================
 echo.
 
-REM Check if git remote is set
+REM Check if git remote is configured
 git remote get-url origin >nul 2>&1
 if %errorlevel% neq 0 (
     echo [FIRST TIME SETUP]
     echo.
-    echo Pehle GitHub repository banana hoga.
+    echo A GitHub repository must be created first.
     echo.
-    echo Step 1: https://github.com/new  par jao
-    echo Step 2: Repository name: chess-ai-coach  likho
-    echo Step 3: "Create repository" button dabao
-    echo Step 4: URL copy karo (dikhega: https://github.com/YOUR-NAME/chess-ai-coach.git)
+    echo Step 1: Go to https://github.com/new
+    echo Step 2: Enter repository name: chess-ai-coach
+    echo Step 3: Click "Create repository"
+    echo Step 4: Copy the repository URL (e.g., https://github.com/YOUR-NAME/chess-ai-coach.git)
     echo.
-    set /p url="GitHub URL paste karo: "
+    set /p url="Paste the GitHub URL: "
     if "%url%"=="" (
-        echo URL nahi diya. Script band.
+        echo No URL provided. Exiting.
         pause
         exit /b
     )
     git remote add origin %url%
     echo.
-    echo Remote set ho gaya! Ab push kar rahe hain...
+    echo Remote configured. Pushing to GitHub...
     echo.
     git push -u origin main
     if %errorlevel% equ 0 (
         echo.
-        echo DONE! Project GitHub pe aa gaya.
+        echo SUCCESS! Project published on GitHub.
     ) else (
         echo.
-        echo ERROR: Push fail hua. Check karo:
-        echo  1. GitHub pe repository bana li?
-        echo  2. URL sahi hai?
+        echo ERROR: Push failed. Please check:
+        echo  1. Did you create the repository on GitHub?
+        echo  2. Is the URL correct?
     )
     pause
     exit /b
 )
 
-echo Changes check kar rahe hain...
+echo Checking for changes...
 git add -A
 
 git diff --cached --stat --name-only > ._changes.txt
@@ -52,7 +52,7 @@ for %%a in (._changes.txt) do if %%~za gtr 0 set has_changes=1
 del ._changes.txt 2>nul
 
 if %has_changes% equ 0 (
-    echo Koi change nahi hai. Sab up-to-date hai.
+    echo No changes detected. Everything is up to date.
     pause
     exit /b
 )
@@ -62,7 +62,7 @@ echo Changes found:
 git diff --cached --stat
 echo.
 
-echo Commit ready hai. Enter dabao to push (ya Ctrl+C cancel karo).
+echo Press Enter to commit and push (or Ctrl+C to cancel).
 pause
 
 git commit -m "Update %date% %time%"
@@ -70,10 +70,10 @@ git push
 
 if %errorlevel% equ 0 (
     echo.
-    echo SUCCESS! GitHub pe update ho gaya.
+    echo SUCCESS! Changes pushed to GitHub.
 ) else (
     echo.
-    echo ERROR: Push fail hua. Check internet connection.
+    echo ERROR: Push failed. Check your internet connection.
 )
 
 pause
