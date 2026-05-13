@@ -41,14 +41,17 @@ def main():
 
         hostname = socket.gethostname()
         local_ip = socket.gethostbyname(hostname)
-        print(f"\n{'='*44}")
-        print(f"  Chess Coach Web Server is running!")
-        print(f"{'='*44}")
-        print(f"  Local:    http://localhost:{port}")
-        print(f"  Network:  http://{local_ip}:{port}")
-        print(f"  (Use the Network URL on your phone)")
-        print(f"{'='*44}\n")
-        uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
+        print()
+        print("=" * 50)
+        print("  Chess Coach Web Server is running!")
+        print("=" * 50)
+        print(f"  PC:  http://localhost:{port}")
+        print(f"  Phone:  http://{local_ip}:{port}")
+        print("=" * 50)
+        print("  Paste the Phone URL in your mobile browser")
+        print("=" * 50)
+        print()
+        uvicorn.run(app, host="0.0.0.0", port=port, log_level="warning")
 
 
 if __name__ == "__main__":
