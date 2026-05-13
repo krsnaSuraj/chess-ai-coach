@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chess AI Coach</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="css/chessboard.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+            background: #0d1117;
+            color: #f0f6fc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 16px;
+            touch-action: none;
+        }
+
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(13, 17, 23, 0.97);
+            backdrop-filter: blur(8px);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+
+        .modal-overlay h2 {
+            color: #58a6ff;
+            font-size: 1.5rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 32px;
+            font-weight: 600;
+        }
+
+        .color-btn {
+            padding: 18px 48px;
+            margin: 8px;
+            font-size: 1.2rem;
+            background: #161b22;
+            color: #f0f6fc;
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            min-width: 240px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            letter-spacing: 0.5px;
+        }
+
+        .color-btn:hover {
+            border-color: #58a6ff;
+            background: #1c2333;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(88, 166, 255, 0.15);
+        }
+
+        .color-btn:active { transform: translateY(0); }
+
+        .status-bar {
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+            margin-bottom: 12px;
+            padding: 12px 16px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+        }
+
+        .status-text { font-size: 1.1rem; font-weight: 600; margin-bottom: 2px; }
+        .eval-text { font-size: 1.2rem; font-weight: bold; font-family: 'Consolas', 'Courier New', monospace; transition: color 0.3s ease; }
+        .eval-label { font-size: 0.8rem; margin-top: 2px; color: #8b949e; transition: color 0.3s ease; }
+
+        .board-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 420px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+            border: 1px solid #30363d;
+        }
+
+        #board { width: 100%; }
+        #overlay {
+            pointer-events: none;
+            position: absolute; inset: 0;
+            z-index: 100;
+        }
+
+        .hidden { display: none !important; }
+
+        .btn-reset {
+            margin-top: 14px;
+            padding: 10px 28px;
+            background: #161b22;
+            color: #f0f6fc;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .btn-reset:hover {
+            border-color: #58a6ff;
+            background: #1c2333;
+        }
+
+        .footer { margin-top: 16px; font-size: 0.7rem; color: #484f58; }
+    </style>
+</head>
+<body>
+
+<div id="modal" class="modal-overlay">
+    <h2>Select Your Color</h2>
+    <button class="color-btn" onclick="initGame(true)">Play as White</button>
+    <button class="color-btn" onclick="initGame(false)">Play as Black</button>
+</div>
+
+<div class="status-bar">
+    <div class="status-text" id="status">Connecting...</div>
+    <div class="eval-text" id="eval">--</div>
+    <div class="eval-label" id="evalLabel"></div>
+</div>
+
+<div class="board-wrapper">
+    <div id="board"></div>
+    <svg id="overlay" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+</div>
+
+<button class="btn-reset" onclick="location.reload()">New Game</button>
+<div class="footer">Chess AI Coach &mdash; Powered by Stockfish</div>
+
+<script src="js/jquery.min.js"></script>
+<script src="js/chess.js"></script>
+<script src="js/chessboard.js"></script>
+
+<script>
+const STATE = { game: new Chess(), board: null, isWhite: true, busy: false };
+
+function initGame(isWhite) {
+    STATE.isWhite = isWhite;
+    document.getElementById('modal').classList.add('hidden');
+
+    STATE.board = Chessboard('board', {
+        draggable: true,
+        position: 'start',
+        orientation: isWhite ? 'white' : 'black',
+        pieceTheme: 'img/chesspieces/wikipedia/{piece}.png',
+        onDragStart,
+        onDrop,
+        onSnapEnd: () => STATE.board.position(STATE.game.fen())
+    });
+
+    $(window).resize(STATE.board.resize);
+    apiCall('/api/start_game', { human_is_white: isWhite })
+        .then(processResponse)
+        .catch(handleError);
+}
+
+function onDragStart(source, piece) {
+    if (STATE.busy || STATE.game.game_over()) return false;
+    return true;
+}
+
+async function onDrop(source, target) {
+    const move = STATE.game.move({ from: source, to: target, promotion: 'q' });
+    if (move === null) return 'snapback';
+
+    STATE.busy = true;
+    clearArrow();
+    setStatus("Processing...");
+
+    try {
+        const data = await apiCall('/api/human_move', { move_uci: move.from + move.to });
+        if (!data.ok) {
+            STATE.game.undo();
+            STATE.board.position(STATE.game.fen());
+            handleError(data.error || "Invalid move");
+        } else {
+            processResponse(data);
+        }
+    } catch (e) {
+        STATE.game.undo();
+        STATE.board.position(STATE.game.fen());
+        handleError(e);
+    } finally {
+        STATE.busy = false;
+    }
+}
+
+function processResponse(data) {
+    if (!data.ok) { handleError(data.error || "Error"); return; }
+
+    STATE.game.load(data.fen);
+    STATE.board.position(data.fen);
+
+    if (data.mode === 'coach') {
+        if (data.coach) {
+            setStatus("Your Turn");
+            renderCoach(data.coach);
+        } else {
+            const turn = STATE.game.turn() === 'w' ? "White" : "Black";
+            setStatus(turn + "'s Turn");
+            clearArrow();
+            document.getElementById('eval').textContent = '--';
+            document.getElementById('eval').style.color = '#8b949e';
+            document.getElementById('evalLabel').textContent = '';
+        }
+    }
+}
+
+function renderCoach(coach) {
+    let label = '', color = '#8b949e';
+
+    if (coach.eval.includes('M')) {
+        label = coach.eval.startsWith('+') ? 'Mate for you' : 'Mate against you';
+        color = coach.eval.startsWith('+') ? '#3fb950' : '#f85149';
+    } else {
+        const n = parseFloat(coach.eval);
+        if (n > 0.30)     { label = 'You are better';       color = '#3fb950'; }
+        else if (n < -0.30) { label = 'Opponent is better';   color = '#f85149'; }
+        else                { label = 'Position is equal';     color = '#8b949e'; }
+    }
+
+    document.getElementById('eval').textContent = coach.eval;
+    document.getElementById('eval').style.color = color;
+    document.getElementById('evalLabel').textContent = label;
+    document.getElementById('evalLabel').style.color = color;
+
+    if (coach.best_move) {
+        drawArrow(coach.best_move.substring(0,2), coach.best_move.substring(2,4));
+    }
+}
+
+async function apiCall(endpoint, body) {
+    const res = await fetch(endpoint, {
+        method: body ? 'POST' : 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        body: body ? JSON.stringify(body) : undefined
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+}
+
+function setStatus(msg) { document.getElementById('status').textContent = msg; }
+
+function handleError(msg) {
+    console.error(msg);
+    document.getElementById('status').textContent = 'Connection Error';
+    document.getElementById('status').style.color = '#f85149';
+}
+
+function clearArrow() { document.getElementById('overlay').innerHTML = ''; }
+
+function drawArrow(from, to) {
+    clearArrow();
+    const map = {a:0,b:1,c:2,d:3,e:4,f:5,g:6,h:7};
+    const x1 = map[from[0]], y1 = 8 - parseInt(from[1]);
+    const x2 = map[to[0]], y2 = 8 - parseInt(to[1]);
+    const pct = v => v * 12.5 + 6.25;
+    const svg = document.getElementById('overlay');
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    const flip = STATE.board.orientation() === 'black';
+    const fx = v => flip ? 100 - v : v;
+    const fy = v => flip ? 100 - v : v;
+
+    line.setAttribute('x1', fx(pct(x1)));
+    line.setAttribute('y1', fy(pct(y1)));
+    line.setAttribute('x2', fx(pct(x2)));
+    line.setAttribute('y2', fy(pct(y2)));
+    line.setAttribute('stroke', '#3fb950');
+    line.setAttribute('stroke-width', '2.5');
+    line.setAttribute('marker-end', 'url(#head)');
+    svg.appendChild(line);
+
+    if (!document.getElementById('head')) {
+        const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
+        const m = document.createElementNS('http://www.w3.org/2000/svg','marker');
+        m.setAttribute('id','head');
+        m.setAttribute('markerWidth','4');
+        m.setAttribute('markerHeight','4');
+        m.setAttribute('refX','2');
+        m.setAttribute('refY','2');
+        m.setAttribute('orient','auto');
+        const p = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+        p.setAttribute('points','0,0 4,2 0,4');
+        p.setAttribute('fill','#3fb950');
+        m.appendChild(p);
+        defs.appendChild(m);
+        svg.appendChild(defs);
+    }
+}
+</script>
+</body>
+</html>

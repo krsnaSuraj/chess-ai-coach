@@ -1,0 +1,11 @@
+engine:
+  path: "stockfish.exe"
+  threads: 2
+  hash: 1024
+  movetime: 2000
+
+display:
+  dark_square: "#B58863"
+  light_square: "#F0D9B5"
+  arrow_color: "#00FF00"
+  arrow_opacity: 0.6

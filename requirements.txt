@@ -1,0 +1,6 @@
+PyQt6
+python-chess
+pyyaml
+fastapi
+uvicorn
+pydantic
