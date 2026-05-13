@@ -214,23 +214,23 @@ async function onDrop(source, target) {
 
 function updateStatusBar() {
     const gs = document.getElementById('gameStatus');
-    if (STATE.game.isCheckmate()) {
+    if (STATE.game.in_checkmate()) {
         const winner = STATE.game.turn() === 'w' ? 'Black' : 'White';
         gs.textContent = '# Checkmate! ' + winner + ' wins!';
         gs.style.color = '#3fb950';
         return;
     }
-    if (STATE.game.isDraw()) {
+    if (STATE.game.in_draw()) {
         gs.textContent = 'Draw! Game over.';
         gs.style.color = '#d29922';
         return;
     }
-    if (STATE.game.isStalemate()) {
+    if (STATE.game.in_stalemate()) {
         gs.textContent = 'Stalemate! Draw.';
         gs.style.color = '#d29922';
         return;
     }
-    if (STATE.game.isCheck()) {
+    if (STATE.game.in_check()) {
         gs.textContent = STATE.game.turn() === 'w' ? 'Black' : 'White';
         gs.textContent += ' gives check!';
         gs.style.color = '#f85149';
