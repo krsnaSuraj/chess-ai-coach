@@ -50,6 +50,9 @@ python run.py          # Desktop mode
 python run.py web      # Web mode
 ```
 
+**Note:** The `UPDATE.bat` script is for the repository owner only.
+Others should not run it — it will fail due to missing permissions.
+
 ---
 
 ## Troubleshooting

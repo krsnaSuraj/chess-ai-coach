@@ -1,5 +1,5 @@
 @echo off
-title Chess AI Coach - GitHub Update Tool
+title Chess AI Coach - Update Tool
 cd /d "%~dp0"
 
 echo ========================================
@@ -7,17 +7,23 @@ echo    Chess AI Coach - GitHub Update Tool
 echo ========================================
 echo.
 
-REM Check if git remote is configured
+REM Check if git is installed
+git --version >nul 2>&1
+if %errorlevel% neq 0 (
+    echo Git is not installed. Download from: https://git-scm.com/downloads
+    pause
+    exit /b
+)
+
+REM First time setup: no remote configured yet
 git remote get-url origin >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [FIRST TIME SETUP]
+    echo [FIRST TIME SETUP - Project Owner Only]
     echo.
-    echo A GitHub repository must be created first.
-    echo.
-    echo Step 1: Go to https://github.com/new
-    echo Step 2: Enter repository name: chess-ai-coach
-    echo Step 3: Click "Create repository"
-    echo Step 4: Copy the repository URL (e.g., https://github.com/YOUR-NAME/chess-ai-coach.git)
+    echo Create a repository on GitHub first:
+    echo   Step 1: Go to https://github.com/new
+    echo   Step 2: Repository name: chess-ai-coach
+    echo   Step 3: Click "Create repository"
     echo.
     set /p url="Paste the GitHub URL: "
     if "%url%"=="" (
@@ -27,18 +33,26 @@ if %errorlevel% neq 0 (
     )
     git remote add origin %url%
     echo.
-    echo Remote configured. Pushing to GitHub...
-    echo.
     git push -u origin main
     if %errorlevel% equ 0 (
         echo.
         echo SUCCESS! Project published on GitHub.
     ) else (
         echo.
-        echo ERROR: Push failed. Please check:
-        echo  1. Did you create the repository on GitHub?
-        echo  2. Is the URL correct?
+        echo ERROR: Push failed.
     )
+    pause
+    exit /b
+)
+
+REM Check if this is the original repo (vs a fork/clone)
+git remote get-url origin | findstr /i "krsnaSuraj" >nul
+if %errorlevel% neq 0 (
+    echo This appears to be a fork or clone.
+    echo UPDATE.bat is only for the repository owner.
+    echo.
+    echo If you want to contribute, fork the repo on GitHub
+    echo and submit a pull request instead.
     pause
     exit /b
 )
@@ -61,8 +75,7 @@ echo.
 echo Changes found:
 git diff --cached --stat
 echo.
-
-echo Press Enter to commit and push (or Ctrl+C to cancel).
+echo Press Enter to commit and push (Ctrl+C to cancel).
 pause
 
 git commit -m "Update %date% %time%"
@@ -73,7 +86,7 @@ if %errorlevel% equ 0 (
     echo SUCCESS! Changes pushed to GitHub.
 ) else (
     echo.
-    echo ERROR: Push failed. Check your internet connection.
+    echo ERROR: Push failed.
 )
 
 pause
