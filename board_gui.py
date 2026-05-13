@@ -397,7 +397,7 @@ class ChessBoard(QWidget):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Chess AI Coach")
+        self.setWindowTitle("Chess Coach")
         self.resize(1100, 720)
         self.setStyleSheet(f"background-color: {COLORS['bg']};")
 

@@ -1,8 +1,8 @@
 <div align="center">
 
-# ♟️ Chess AI Coach
+# ♟️ Chess Coach
 
-**A professional chess coaching application powered by Stockfish**
+**A real-time chess analysis tool powered by the Stockfish engine**
 
 [![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python)](https://python.org)
 [![PyQt6](https://img.shields.io/badge/GUI-PyQt6-green?logo=qt)](https://www.riverbankcomputing.com/software/pyqt/)
@@ -17,7 +17,7 @@
 
 ## 📋 Overview
 
-Chess AI Coach is a real-time chess analysis tool that helps you improve your game. It uses the **Stockfish engine** to evaluate every position, suggest the best move, detect blunders, and provide instant feedback — all through a clean, professional interface.
+Chess Coach is a real-time chess analysis tool. It uses the **Stockfish engine** to evaluate positions, suggest moves, detect blunders, and provide instant feedback — without any AI or machine learning, just raw engine calculation.
 
 Available as both a **desktop application** (PyQt6) and a **web application** (FastAPI) that works on mobile devices.
 
@@ -56,7 +56,7 @@ Available as both a **desktop application** (PyQt6) and a **web application** (F
 3. Use the suggestion on chess.com or any chess platform
 ```
 
-> **Pro tip:** Play on chess.com on your phone, enter the same moves here, and use the AI suggestions to decide your next move.
+> **Pro tip:** Play on chess.com on your phone, enter the same moves here, and use the engine suggestions to decide your next move.
 
 ---
 

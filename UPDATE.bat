@@ -1,9 +1,9 @@
 @echo off
-title Chess AI Coach - GitHub Update
+title Chess Coach - GitHub Update
 cd /d "%~dp0"
 
 echo ========================================
-echo    Chess AI Coach - GitHub Update
+echo       Chess Coach - GitHub Update
 echo ========================================
 echo.
 

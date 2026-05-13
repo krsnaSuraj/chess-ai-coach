@@ -1,5 +1,5 @@
 """
-Chess AI Coach - Launcher
+Chess Coach - Launcher
 Usage:
   python run.py          -> Start Desktop GUI (default)
   python run.py desktop  -> Start Desktop GUI
