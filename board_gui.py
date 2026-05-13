@@ -717,6 +717,15 @@ class MainWindow(QMainWindow):
 
     def _new_game(self):
         try:
+            from PyQt6.QtWidgets import QInputDialog
+            items = ["White", "Black"]
+            item, ok = QInputDialog.getItem(self, "Play as",
+                                            "Select your color:", items, 0, False)
+            if not ok:
+                return
+            self.user_color = chess.WHITE if item == "White" else chess.BLACK
+            self.board_flipped = (self.user_color == chess.BLACK)
+
             self.engine_handler.stop_analysis()
             self.board.reset()
             self.redo_stack.clear()
@@ -736,6 +745,7 @@ class MainWindow(QMainWindow):
             )
             self.lbl_engine.setText("Ready")
             self.eval_bar.setValue(1000)
+            self.chess_board.set_flipped(self.board_flipped)
             self.chess_board.set_board(self.board)
             self._update_feedback()
         except Exception as e:
