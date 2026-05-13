@@ -252,6 +252,7 @@ function renderCoach(coach) {
 document.addEventListener('keydown', function(e) {
     if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undoMove(); }
     if (e.ctrlKey && e.key === 'y') { e.preventDefault(); redoMove(); }
+    if (e.ctrlKey && e.key === 'n') { e.preventDefault(); location.reload(); }
 });
 
 async function undoMove() {

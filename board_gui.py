@@ -620,6 +620,24 @@ class MainWindow(QMainWindow):
         self.btn_redo.clicked.connect(self._redo)
         btn_row.addWidget(self.btn_redo)
 
+        self.btn_new = QPushButton("New Game")
+        self.btn_new.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {COLORS['red']};
+                color: white;
+                border: none;
+                border-radius: 4px;
+                padding: 6px 12px;
+                font-size: 11px;
+                font-weight: bold;
+            }}
+            QPushButton:hover {{
+                background-color: #d03540;
+            }}
+        """)
+        self.btn_new.clicked.connect(self._new_game)
+        btn_row.addWidget(self.btn_new)
+
         sidebar_layout.addLayout(btn_row)
 
         s5 = QLabel("MOVE HISTORY")
@@ -633,6 +651,7 @@ class MainWindow(QMainWindow):
 
         QShortcut(QKeySequence("Ctrl+Z"), self).activated.connect(self._undo)
         QShortcut(QKeySequence("Ctrl+Y"), self).activated.connect(self._redo)
+        QShortcut(QKeySequence("Ctrl+N"), self).activated.connect(self._new_game)
 
         self.statusBar().setStyleSheet(f"""
             QStatusBar {{
@@ -695,6 +714,32 @@ class MainWindow(QMainWindow):
             self._update_feedback()
         except Exception as e:
             print(f"Undo error: {e}")
+
+    def _new_game(self):
+        try:
+            self.engine_handler.stop_analysis()
+            self.board.reset()
+            self.redo_stack.clear()
+            self.position_version += 1
+            self.analysis_received = False
+            self.last_known_move = None
+            self.current_eval = 0.0
+            self.prev_eval = 0.0
+            self.move_list.clear()
+            self.lbl_eval.setText("0.00")
+            self.lbl_best.setText("-")
+            self.lbl_feedback.setText("New game started")
+            self.lbl_feedback.setStyleSheet(
+                f"color: {COLORS['text']}; padding: 10px;"
+                f"background: {COLORS['bg']};"
+                f"border: 1px solid {COLORS['border']}; border-radius: 4px;"
+            )
+            self.lbl_engine.setText("Ready")
+            self.eval_bar.setValue(1000)
+            self.chess_board.set_board(self.board)
+            self._update_feedback()
+        except Exception as e:
+            print(f"New game error: {e}")
 
     def _redo(self):
         if not self.redo_stack:
