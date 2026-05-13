@@ -269,7 +269,13 @@ def _run_coach_analysis_safe() -> dict | None:
         return None
 
 
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+class _NoCacheStaticFiles(StaticFiles):
+    def file_response(self, *args, **kwargs):
+        resp = super().file_response(*args, **kwargs)
+        resp.headers.setdefault("Cache-Control", "no-cache, no-store, must-revalidate")
+        return resp
+
+app.mount("/", _NoCacheStaticFiles(directory="static", html=True), name="static")
 
 if __name__ == "__main__":
     import uvicorn, socket, subprocess
