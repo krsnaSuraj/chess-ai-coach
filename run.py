@@ -30,7 +30,7 @@ def main():
         sys.exit(app.exec())
 
     else:
-        import uvicorn
+        import uvicorn, socket
         from server import app
 
         port = 8000
@@ -39,7 +39,15 @@ def main():
                 port = int(a)
                 break
 
-        print(f" Web Server starting at http://localhost:{port}")
+        hostname = socket.gethostname()
+        local_ip = socket.gethostbyname(hostname)
+        print(f"\n{'='*44}")
+        print(f"  Chess Coach Web Server is running!")
+        print(f"{'='*44}")
+        print(f"  Local:    http://localhost:{port}")
+        print(f"  Network:  http://{local_ip}:{port}")
+        print(f"  (Use the Network URL on your phone)")
+        print(f"{'='*44}\n")
         uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
 
 

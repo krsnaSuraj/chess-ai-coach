@@ -266,5 +266,14 @@ def _run_coach_analysis_safe() -> dict | None:
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    import uvicorn, socket
+    hostname = socket.gethostname()
+    local_ip = socket.gethostbyname(hostname)
+    print(f"\n============================================")
+    print(f"  Chess Coach Web Server is running!")
+    print(f"============================================")
+    print(f"  Local:    http://localhost:8000")
+    print(f"  Network:  http://{local_ip}:8000")
+    print(f"  (Use the Network URL on your phone)")
+    print(f"============================================\n")
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
