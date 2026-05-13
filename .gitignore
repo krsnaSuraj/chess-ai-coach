@@ -24,3 +24,5 @@ Thumbs.db
 # Temp test files
 _*.py
 _*.ps1
+._*.tmp
+._*.txt
