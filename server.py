@@ -86,7 +86,10 @@ async def lifespan(app):
     yield
     global engine
     if engine:
-        engine.quit()
+        try:
+            engine.quit()
+        except Exception:
+            pass
         engine = None
 
 app = FastAPI(lifespan=lifespan)
