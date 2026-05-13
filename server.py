@@ -3,6 +3,7 @@ import chess.engine
 import yaml
 import os
 import threading
+from contextlib import asynccontextmanager
 from enum import Enum
 from pydantic import BaseModel
 from fastapi import FastAPI
@@ -80,7 +81,15 @@ MOVETIME = config.get("engine", {}).get("movetime", 2000) / 1000.0
 
 engine = None
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app):
+    yield
+    global engine
+    if engine:
+        engine.quit()
+        engine = None
+
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -117,14 +126,6 @@ def get_engine():
             print(f"Failed to start engine: {e}")
             return None
     return engine
-
-
-@app.on_event("shutdown")
-def shutdown():
-    global engine
-    if engine:
-        engine.quit()
-        engine = None
 
 
 @app.get("/api/health")
