@@ -133,6 +133,7 @@
     <div class="status-text" id="status">Connecting...</div>
     <div class="eval-text" id="eval">--</div>
     <div class="eval-label" id="evalLabel"></div>
+    <div class="game-status" id="gameStatus" style="font-size:0.85rem;margin-top:4px;font-weight:bold;"></div>
 </div>
 
 <div class="board-wrapper">
@@ -205,11 +206,48 @@ async function onDrop(source, target) {
     }
 }
 
+function updateStatusBar() {
+    const gs = document.getElementById('gameStatus');
+    if (STATE.game.isCheckmate()) {
+        const winner = STATE.game.turn() === 'w' ? 'Black' : 'White';
+        gs.textContent = '# Checkmate! ' + winner + ' wins!';
+        gs.style.color = '#3fb950';
+        return;
+    }
+    if (STATE.game.isDraw()) {
+        gs.textContent = 'Draw! Game over.';
+        gs.style.color = '#d29922';
+        return;
+    }
+    if (STATE.game.isStalemate()) {
+        gs.textContent = 'Stalemate! Draw.';
+        gs.style.color = '#d29922';
+        return;
+    }
+    if (STATE.game.isCheck()) {
+        gs.textContent = STATE.game.turn() === 'w' ? 'Black' : 'White';
+        gs.textContent += ' gives check!';
+        gs.style.color = '#f85149';
+        return;
+    }
+    gs.textContent = '';
+}
+
 function processResponse(data) {
     if (!data.ok) { handleError(data.error || "Error"); return; }
 
     STATE.game.load(data.fen);
     STATE.board.position(data.fen);
+    updateStatusBar();
+
+    if (STATE.game.game_over()) {
+        setStatus("Game Over");
+        clearArrow();
+        document.getElementById('eval').textContent = '--';
+        document.getElementById('eval').style.color = '#888';
+        document.getElementById('evalLabel').textContent = '';
+        return;
+    }
 
     if (data.mode === 'coach') {
         if (data.coach) {

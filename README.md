@@ -26,17 +26,17 @@ It shows the best move, evaluation score, blunders, and more — through a clean
 
 ## 🚀 Quick Start
 
+### One-click setup (Windows)
+Double-click **`install.bat`** — it will auto-install everything.
+
+### Manual setup
 ```bash
 # 1. Install dependencies
 pip install -r requirements.txt
 
-# 2. Run (choose one)
-
-# Desktop mode (recommended)
-python run.py
-
-# Web mode (works on mobile too)
-python run.py web
+# 2. Run
+python run.py          # Desktop mode
+python run.py web      # Web mode (works on mobile too)
 ```
 
 **Desktop mode** opens a full window with a dashboard on the side.  
