@@ -1,207 +1,117 @@
-<div align="center">
-
 # ♟️ Chess Coach
 
-**A real-time chess analysis tool powered by the Stockfish engine**
+**Real-time chess analysis tool powered by Stockfish engine.**
 
-[![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python)](https://python.org)
-[![PyQt6](https://img.shields.io/badge/GUI-PyQt6-green?logo=qt)](https://www.riverbankcomputing.com/software/pyqt/)
-[![FastAPI](https://img.shields.io/badge/Web-FastAPI-teal?logo=fastapi)](https://fastapi.tiangolo.com)
-[![License](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
-
-**Desktop GUI** · **Web App** · **Real-time Analysis** · **Blunder Detection**
+Available in two modes:
+- **Desktop App** — Full window with dashboard (recommended)
+- **Web App** — Works in browser, also on mobile
 
 ---
 
-</div>
+## 🚀 How to Use
 
-## 📋 Overview
-
-Chess Coach is a real-time chess analysis tool. It uses the **Stockfish engine** to evaluate positions, suggest moves, detect blunders, and provide instant feedback — without any AI or machine learning, just raw engine calculation.
-
-Available as both a **desktop application** (PyQt6) and a **web application** (FastAPI) that works on mobile devices.
-
----
-
-## ✨ Features
-
-| Feature | Description |
-|---|---|
-| 🤖 **Engine Analysis** | Stockfish evaluates every position in real-time (depth 20+) |
-| 🎯 **Best Move Arrow** | Green arrow shows the recommended move on the board |
-| 📊 **Evaluation Bar** | Gradient bar — green for equal, red shows advantage |
-| ⚠️ **Blunder Detection** | Alerts when a move worsens the position by 1.0+ pawns |
-| 👑 **Check Detection** | Red highlight on the king when in check |
-| 🔄 **Last Move Highlight** | Yellow highlight on the most recent move |
-| ⚪ **Legal Move Indicators** | Dots for valid moves, rings for captures |
-| 📜 **Move History** | Complete move list in standard algebraic notation |
-| 💬 **Coach Feedback** | Position assessment with advantage descriptions |
-| 🖱️ **Drag & Drop** | Smooth piece dragging with semi-transparent shadow |
-
----
-
-## 🎬 Workflow
-
-```
-1. Choose your color (White/Black)
-         │
-         ▼
-2. Play moves for both sides
-         │
-         ├── Your turn → Stockfish analyzes → Shows best move + eval
-         │
-         └── Opponent's turn → Enter their move → No suggestions
-         │
-         ▼
-3. Use the suggestion on chess.com or any chess platform
-```
-
-> **Pro tip:** Play on chess.com on your phone, enter the same moves here, and use the engine suggestions to decide your next move.
-
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Python 3.10+
-- Stockfish (included — `stockfish.exe`, 76 MB)
-
-### Installation
+### Step 1: Install
 
 ```bash
-# Clone the repository
-git clone https://github.com/krsnaSuraj/chess-coach.git
-cd chess-coach
-
-# Install dependencies
 pip install -r requirements.txt
+```
 
-# Run desktop app
+### Step 2: Run
+
+**Desktop mode** (recommended):
+```bash
 python run.py
+```
 
-# Or run web app (mobile-friendly)
+**Web mode** (works on phone too):
+```bash
 python run.py web
 ```
+Then open http://localhost:8000 in your browser.
+
+### Step 3: Play
+
+1. Choose White or Black
+2. Drag pieces to make moves (you play both sides)
+3. Stockfish analyzes and shows suggestions on YOUR turn
+4. Check the dashboard for evaluation, best move, and feedback
 
 ---
 
-## 🖥️ Desktop App
+## ✨ What It Does
 
-The main interface with a full-featured dashboard.
-
-```
-┌─────────────────────────────────────────────────────┐
-│  ┌──────────────┐  ┌──────────────────────────────┐ │
-│  │              │  │       COACH DASHBOARD         │ │
-│  │   Chess      │  │  ┌─────┐                     │ │
-│  │   Board      │  │  │eval ├── Evaluation: +0.35 │ │
-│  │   with       │  │  │ bar │── Best Move: e2e4   │ │
-│  │   Piece      │  │  └─────┘── Engine: Depth 20  │ │
-│  │   Images     │  │                              │ │
-│  │              │  │  Coach Feedback              │ │
-│  │   ← Arrow   │  │  ┌──────────────────────┐    │ │
-│  │              │  │  │ White is better      │    │ │
-│  └──────────────┘  │  └──────────────────────┘    │ │
-│                    │  Move History                │ │
-│                    │  ┌──────────────────────┐    │ │
-│                    │  │ 1W  e4               │    │ │
-│                    │  │ 1B  e5               │    │ │
-│                    │  └──────────────────────┘    │ │
-│                    └──────────────────────────────┘ │
-└─────────────────────────────────────────────────────┘
-```
-
-### Controls
-- **Click & drag** pieces to make moves
-- **Sidebar** shows all coach data (evaluation, best move, feedback)
-- **Status bar** at the bottom shows engine status
+| Feature | What It Shows |
+|---|---|
+| **Best Move Arrow** | Green arrow → recommended move |
+| **Evaluation Bar** | Gradient bar telling who is winning |
+| **Coach Feedback** | "White is better", "Black is winning" etc. |
+| **Blunder Alert** | Red alert if you made a big mistake |
+| **Check Highlight** | Red glow on king when in check |
+| **Last Move Highlight** | Yellow highlight on last played move |
+| **Legal Move Dots** | Shows where selected piece can move |
+| **Move History** | All moves listed in the sidebar |
+| **Engine Info** | Shows Stockfish analysis depth |
 
 ---
 
-## 🌐 Web App
-
-Runs in any browser — desktop or mobile.
+## 📱 Web Mode on Mobile
 
 ```bash
 python run.py web
-# Open: http://localhost:8000
 ```
 
-- Same features as the desktop app
-- Mobile-friendly with touch support
-- Wikipedia-style piece images
-- Green arrow for best move recommendations
+Find your computer's local IP:
+```bash
+ipconfig
+# Look for: IPv4 Address: 192.168.x.x
+```
+
+On your phone browser, open:
+```
+http://192.168.x.x:8000
+```
 
 ---
 
-## ⚙️ Configuration
+## 📁 Project Files (Simple Explanation)
 
-Edit `config.yaml` to customize the engine and display settings:
+| File | What It Does |
+|---|---|
+| `run.py` | **The only file you run.** Starts desktop or web. |
+| `server.py` | Web server code (used when you do `python run.py web`) |
+| `board_gui.py` | Desktop window code (the board, pieces, sidebar) |
+| `engine_handler.py` | Connects to Stockfish engine for analysis |
+| `stockfish.exe` | The chess engine (76 MB, included) |
+| `config.yaml` | Settings like engine strength, board colors |
+| `requirements.txt` | List of Python packages to install |
+| `UPDATE.bat` | For publishing updates to GitHub |
+| `static/` | Web files (HTML, images) shown in browser mode |
+
+---
+
+## ⚙️ Settings (config.yaml)
 
 ```yaml
 engine:
-  path: "stockfish.exe"   # Path to Stockfish binary
-  threads: 2              # CPU threads for analysis
-  hash: 1024              # Hash table size (MB)
-  movetime: 2000          # Analysis time per move (ms)
+  threads: 2          # CPU cores to use (increase = faster)
+  hash: 1024          # Memory in MB for analysis
+  movetime: 2000      # Analysis time per move (ms)
 
 display:
-  dark_square: "#B58863"  # Dark square color
-  light_square: "#F0D9B5" # Light square color
-  arrow_color: "#00FF00"  # Best move arrow color
+  dark_square: "#B58863"   # Board dark square color
+  light_square: "#F0D9B5"  # Board light square color
 ```
 
 ---
 
-## 📂 Project Structure
+## ❓ Common Problems
 
-```
-chess-coach/
-├── run.py              # Launcher (desktop / web)
-├── main.py             # Desktop entry point
-├── server.py           # Web server (FastAPI)
-├── board_gui.py        # Desktop GUI (PyQt6)
-├── engine_handler.py   # Stockfish engine manager
-├── utils.py            # Configuration loader
-├── config.yaml         # Engine & display settings
-├── stockfish.exe       # Stockfish chess engine
-├── UPDATE.bat          # GitHub update tool
-├── requirements.txt
-├── README.md
-└── static/             # Web frontend
-    ├── index.html
-    ├── js/
-    ├── css/
-    └── img/chesspieces/wikipedia/
-```
+**"pip install fails"** → Make sure Python 3.10+ is installed
 
----
+**"Module not found"** → Run `pip install -r requirements.txt` again
 
-## 🛠️ Tech Stack
+**"Web page not loading"** → Use `http://localhost:8000` not `https`
 
-| Technology | Purpose |
-|---|---|
-| [PyQt6](https://www.riverbankcomputing.com/software/pyqt/) | Desktop graphical user interface |
-| [FastAPI](https://fastapi.tiangolo.com) | Web server framework |
-| [Stockfish](https://stockfishchess.org) | UCI chess engine |
-| [python-chess](https://python-chess.readthedocs.io) | Chess logic and UCI protocol |
-| [chessboard.js](https://chessboardjs.com) | Web chessboard UI |
-| [chess.js](https://github.com/jhlywa/chess.js) | Web chess logic |
+**"Engine not analyzing"** → Check stockfish.exe exists in the folder
 
----
-
-## 📝 License
-
-This project is open source and available under the MIT License.
-
-Stockfish is distributed under the GPLv3 license.
-
----
-
-<div align="center">
-
-**Made with ❤️ for the chess community**
-
-[Report Bug](https://github.com/krsnaSuraj/chess-coach/issues) · [Request Feature](https://github.com/krsnaSuraj/chess-coach/issues)
-
-</div>
+**"Permission denied"** → If on Mac/Linux, run: `chmod +x stockfish`
