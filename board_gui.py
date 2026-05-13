@@ -518,12 +518,27 @@ class MainWindow(QMainWindow):
 
         sidebar_layout = QVBoxLayout(sidebar)
         sidebar_layout.setContentsMargins(10, 12, 10, 12)
-        sidebar_layout.setSpacing(10)
+        sidebar_layout.setSpacing(8)
 
+        # ── HEADER ──
         heading = QLabel("COACH DASHBOARD")
         heading.setObjectName("heading")
         heading.setAlignment(Qt.AlignmentFlag.AlignCenter)
         sidebar_layout.addWidget(heading)
+
+        # ── TURN INDICATOR ──
+        self.lbl_turn = QLabel("White to move")
+        self.lbl_turn.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.lbl_turn.setStyleSheet(f"""
+            color: {COLORS['accent']}; font-size: 12px; font-weight: bold;
+            padding: 4px; border: 1px solid {COLORS['border']}; border-radius: 4px;
+        """)
+        sidebar_layout.addWidget(self.lbl_turn)
+
+        # ── EVALUATION SECTION ──
+        s1 = QLabel("EVALUATION")
+        s1.setObjectName("section")
+        sidebar_layout.addWidget(s1)
 
         eval_widget = QWidget()
         eval_widget.setStyleSheet("border: none;")
@@ -536,7 +551,7 @@ class MainWindow(QMainWindow):
         self.eval_bar.setRange(0, 2000)
         self.eval_bar.setValue(1000)
         self.eval_bar.setTextVisible(False)
-        self.eval_bar.setFixedWidth(20)
+        self.eval_bar.setFixedWidth(22)
         self.eval_bar.setStyleSheet("""
             QProgressBar {
                 border: 1px solid #30363d;
@@ -552,35 +567,47 @@ class MainWindow(QMainWindow):
         eval_row.addWidget(self.eval_bar)
 
         stats = QVBoxLayout()
-        stats.setSpacing(2)
-
-        s1 = QLabel("EVALUATION")
-        s1.setObjectName("section")
-        stats.addWidget(s1)
+        stats.setSpacing(1)
 
         self.lbl_eval = QLabel("0.00")
         self.lbl_eval.setObjectName("eval")
         stats.addWidget(self.lbl_eval)
 
-        s2 = QLabel("BEST MOVE")
-        s2.setObjectName("section")
-        stats.addWidget(s2)
-
-        self.lbl_best = QLabel("-")
-        self.lbl_best.setObjectName("bestmove")
-        stats.addWidget(self.lbl_best)
-
-        s3 = QLabel("ENGINE")
-        s3.setObjectName("section")
-        stats.addWidget(s3)
+        self.lbl_advantage = QLabel("Equal")
+        self.lbl_advantage.setStyleSheet(f"color: {COLORS['text_dim']}; font-size: 10px; font-weight: bold;")
+        stats.addWidget(self.lbl_advantage)
 
         self.lbl_engine = QLabel("Ready")
-        self.lbl_engine.setStyleSheet(f"color: {COLORS['text_dim']}; font-size: 10px;")
+        self.lbl_engine.setStyleSheet(f"color: {COLORS['text_dim']}; font-size: 9px;")
         stats.addWidget(self.lbl_engine)
 
         eval_row.addLayout(stats)
         sidebar_layout.addWidget(eval_widget)
 
+        # ── BEST MOVE + PV ──
+        s2 = QLabel("BEST LINE")
+        s2.setObjectName("section")
+        sidebar_layout.addWidget(s2)
+
+        self.lbl_best = QLabel("-")
+        self.lbl_best.setObjectName("bestmove")
+        sidebar_layout.addWidget(self.lbl_best)
+
+        self.lbl_pv = QLabel("")
+        self.lbl_pv.setStyleSheet(f"color: {COLORS['text_dim']}; font-size: 9px; font-family: 'Consolas', monospace;")
+        self.lbl_pv.setWordWrap(True)
+        sidebar_layout.addWidget(self.lbl_pv)
+
+        # ── GAME INFO ──
+        s3 = QLabel("GAME INFO")
+        s3.setObjectName("section")
+        sidebar_layout.addWidget(s3)
+
+        self.lbl_info = QLabel("Move 1")
+        self.lbl_info.setStyleSheet(f"color: {COLORS['text_dim']}; font-size: 10px;")
+        sidebar_layout.addWidget(self.lbl_info)
+
+        # ── COACH FEEDBACK ──
         s4 = QLabel("COACH FEEDBACK")
         s4.setObjectName("section")
         sidebar_layout.addWidget(s4)
@@ -591,6 +618,7 @@ class MainWindow(QMainWindow):
         self.lbl_feedback.setAlignment(Qt.AlignmentFlag.AlignTop)
         sidebar_layout.addWidget(self.lbl_feedback, stretch=1)
 
+        # ── BUTTONS ──
         btn_row = QHBoxLayout()
         btn_row.setSpacing(6)
         self.btn_undo = QPushButton("Undo")
@@ -606,10 +634,6 @@ class MainWindow(QMainWindow):
             QPushButton:hover {{
                 border-color: {COLORS['accent']};
                 background-color: {COLORS['sidebar']};
-            }}
-            QPushButton:disabled {{
-                color: {COLORS['text_dim']};
-                border-color: {COLORS['border']};
             }}
         """)
         self.btn_undo.clicked.connect(self._undo)
@@ -640,11 +664,31 @@ class MainWindow(QMainWindow):
 
         sidebar_layout.addLayout(btn_row)
 
+        # ── MOVE HISTORY ──
         s5 = QLabel("MOVE HISTORY")
         s5.setObjectName("section")
         sidebar_layout.addWidget(s5)
 
         self.move_list = QListWidget()
+        self.move_list.setStyleSheet("""
+            QListWidget {
+                background-color: #0d1117;
+                color: #8b949e;
+                border: 1px solid #30363d;
+                border-radius: 4px;
+                font-size: 11px;
+                font-family: 'Consolas', monospace;
+                padding: 4px;
+            }
+            QListWidget::item {
+                padding: 2px 6px;
+                border-bottom: 1px solid #1a1a2e;
+            }
+            QListWidget::item:alternate {
+                background-color: #161b22;
+            }
+        """)
+        self.move_list.setAlternatingRowColors(True)
         sidebar_layout.addWidget(self.move_list, stretch=2)
 
         layout.addWidget(sidebar, stretch=1)
@@ -736,7 +780,11 @@ class MainWindow(QMainWindow):
             self.prev_eval = 0.0
             self.move_list.clear()
             self.lbl_eval.setText("0.00")
+            self.lbl_eval.setStyleSheet(f"color: {COLORS['text']}; font-size: 26px; font-weight: bold; font-family: 'Segoe UI', monospace;")
             self.lbl_best.setText("-")
+            self.lbl_pv.setText("")
+            self.lbl_advantage.setText("Equal")
+            self.lbl_advantage.setStyleSheet(f"color: {COLORS['text_dim']}; font-size: 10px; font-weight: bold;")
             self.lbl_feedback.setText("New game started")
             self.lbl_feedback.setStyleSheet(
                 f"color: {COLORS['text']}; padding: 10px;"
@@ -777,6 +825,43 @@ class MainWindow(QMainWindow):
         self.analyzing_version_id = self.position_version
         self.engine_handler.start_analysis(self.board.copy())
 
+    def _update_turn_display(self):
+        turn_name = "White" if self.board.turn == chess.WHITE else "Black"
+        if self.board.is_checkmate():
+            winner = "Black" if self.board.turn == chess.WHITE else "White"
+            self.lbl_turn.setText(f"Checkmate! {winner} wins")
+            self.lbl_turn.setStyleSheet(f"""
+                color: {COLORS['green']}; font-size: 12px; font-weight: bold;
+                padding: 4px; border: 1px solid {COLORS['green']}; border-radius: 4px;
+            """)
+        elif self.board.is_stalemate():
+            self.lbl_turn.setText("Stalemate! Draw")
+            self.lbl_turn.setStyleSheet(f"""
+                color: {COLORS['yellow']}; font-size: 12px; font-weight: bold;
+                padding: 4px; border: 1px solid {COLORS['yellow']}; border-radius: 4px;
+            """)
+        elif self.board.is_check():
+            self.lbl_turn.setText(f"{turn_name} is in check!")
+            self.lbl_turn.setStyleSheet(f"""
+                color: {COLORS['red']}; font-size: 12px; font-weight: bold;
+                padding: 4px; border: 1px solid {COLORS['red']}; border-radius: 4px;
+            """)
+        else:
+            self.lbl_turn.setText(f"{turn_name} to move")
+            self.lbl_turn.setStyleSheet(f"""
+                color: {COLORS['accent']}; font-size: 12px; font-weight: bold;
+                padding: 4px; border: 1px solid {COLORS['border']}; border-radius: 4px;
+            """)
+
+        move_count = len(self.board.move_stack) // 2 + 1
+        game_phase = "Opening"
+        total_moves = len(self.board.move_stack)
+        if total_moves > 40:
+            game_phase = "Endgame"
+        elif total_moves > 15:
+            game_phase = "Middlegame"
+        self.lbl_info.setText(f"Move {move_count}  |  {game_phase}")
+
     def _on_analysis(self, info):
         try:
             if self.analyzing_version_id != self.position_version:
@@ -802,13 +887,50 @@ class MainWindow(QMainWindow):
                 cur_eval = cp / 100.0
 
             self.current_eval = cur_eval
-
             depth = info.get("depth", 0)
-            self.lbl_engine.setText(f"Depth {depth}")
+
+            # Engine info
+            self.lbl_engine.setText(f"Depth {depth}  |  {info.get('seldepth', depth)}")
+
+            # Evaluation text with color
+            eval_color = COLORS['green'] if cur_eval is not None and cur_eval > 0.3 else \
+                         COLORS['red'] if cur_eval is not None and cur_eval < -0.3 else \
+                         COLORS['text']
+            self.lbl_eval.setStyleSheet(f"color: {eval_color}; font-size: 26px; font-weight: bold; font-family: 'Segoe UI', monospace;")
             self.lbl_eval.setText(text)
 
+            # Advantage label
+            if score.is_mate():
+                if mate > 0:
+                    self.lbl_advantage.setText("White can mate")
+                    self.lbl_advantage.setStyleSheet(f"color: {COLORS['green']}; font-size: 10px; font-weight: bold;")
+                else:
+                    self.lbl_advantage.setText("Black can mate")
+                    self.lbl_advantage.setStyleSheet(f"color: {COLORS['red']}; font-size: 10px; font-weight: bold;")
+            else:
+                adv = "Equal"
+                adv_color = COLORS['text_dim']
+                if cur_eval > 0.5:
+                    adv = "White is winning"
+                    adv_color = COLORS['green']
+                elif cur_eval > 0.2:
+                    adv = "White is better"
+                    adv_color = COLORS['green']
+                elif cur_eval < -0.5:
+                    adv = "Black is winning"
+                    adv_color = COLORS['red']
+                elif cur_eval < -0.2:
+                    adv = "Black is better"
+                    adv_color = COLORS['red']
+                self.lbl_advantage.setText(adv)
+                self.lbl_advantage.setStyleSheet(f"color: {adv_color}; font-size: 10px; font-weight: bold;")
+
+            # Evaluation bar
             bar_val = val + 1000
             self.eval_bar.setValue(int(bar_val))
+
+            # Game info
+            self._update_turn_display()
 
             if not self.can_show_coach():
                 self.chess_board.set_best_move(None)
@@ -821,6 +943,7 @@ class MainWindow(QMainWindow):
                     self.last_known_move = pv[0]
                     self.chess_board.set_best_move(pv[0])
                     self.lbl_best.setText(pv[0].uci())
+                    self.lbl_pv.setText("")
                     self.lbl_feedback.setText(f"CHECKMATE IN {abs(mate)}!")
                     self.lbl_feedback.setStyleSheet(
                         f"color: {COLORS['green']}; padding: 10px;"
@@ -829,40 +952,57 @@ class MainWindow(QMainWindow):
                     self.analysis_received = True
                 return
 
-            feedback = "Balanced"
-            if val > 100:
-                feedback = "White is better"
+            # Coach feedback
+            feedback = "Position is balanced"
+            feed_color = COLORS['text_dim']
             if val > 300:
-                feedback = "White is winning"
-            if val < -100:
-                feedback = "Black is better"
-            if val < -300:
-                feedback = "Black is winning"
+                feedback = "White has a winning advantage"
+                feed_color = COLORS['green']
+            elif val > 100:
+                feedback = "White is better (+1 pawn advantage)"
+                feed_color = COLORS['green']
+            elif val < -300:
+                feedback = "Black has a winning advantage"
+                feed_color = COLORS['red']
+            elif val < -100:
+                feedback = "Black is better (-1 pawn advantage)"
+                feed_color = COLORS['red']
 
             prev = getattr(self, 'prev_eval', None)
             if prev is not None and not score.is_mate():
                 delta = cur_eval - prev
-                if (self.user_color == chess.WHITE and delta < -1.0) or \
-                   (self.user_color == chess.BLACK and delta > 1.0):
-                    feedback = "BLUNDER!\nOpponent missed a chance."
+                is_blunder = (self.user_color == chess.WHITE and delta < -1.0) or \
+                             (self.user_color == chess.BLACK and delta > 1.0)
+                if is_blunder:
+                    feedback = "BLUNDER! You lost advantage this move"
+                    feed_color = COLORS['red']
                     self.lbl_feedback.setStyleSheet(
-                        f"color: {COLORS['red']}; padding: 10px;"
+                        f"color: {COLORS['red']}; padding: 10px; font-weight: bold;"
                         f"border: 1px solid {COLORS['red']}; border-radius: 4px;"
                     )
                 else:
                     self.lbl_feedback.setStyleSheet(
-                        f"color: {COLORS['text']}; padding: 10px;"
+                        f"color: {feed_color}; padding: 10px;"
                         f"background: {COLORS['bg']};"
                         f"border: 1px solid {COLORS['border']}; border-radius: 4px;"
                     )
+            else:
+                self.lbl_feedback.setStyleSheet(
+                    f"color: {feed_color}; padding: 10px;"
+                    f"background: {COLORS['bg']};"
+                    f"border: 1px solid {COLORS['border']}; border-radius: 4px;"
+                )
 
             self.lbl_feedback.setText(feedback)
 
+            # Best move + PV line
             pv = info.get("pv")
             if pv:
                 self.last_known_move = pv[0]
                 self.chess_board.set_best_move(pv[0])
                 self.lbl_best.setText(pv[0].uci())
+                pv_str = " ".join(m.uci() for m in pv[:4])
+                self.lbl_pv.setText(f"Line: {pv_str}")
                 self.analysis_received = True
 
         except Exception as e:
@@ -872,12 +1012,14 @@ class MainWindow(QMainWindow):
         return self.board.turn == self.user_color
 
     def _update_feedback(self):
+        self._update_turn_display()
         if self.can_show_coach() and not self.board.is_game_over():
             self.run_analysis()
         else:
             self.last_known_move = None
             self.chess_board.set_best_move(None)
             self.lbl_best.setText("-")
+            self.lbl_pv.setText("")
             self.lbl_feedback.setText("Waiting for your turn...")
             self.lbl_feedback.setStyleSheet(
                 f"color: {COLORS['text']}; padding: 10px;"
