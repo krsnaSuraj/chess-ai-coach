@@ -953,15 +953,23 @@ class MainWindow(QMainWindow):
                 self.chess_board.set_best_move(None)
                 return
 
-            if score.is_mate():
+            if self.board.is_checkmate():
                 self.engine_handler.stop_analysis()
+                self.lbl_feedback.setText("CHECKMATE! Game over.")
+                self.lbl_feedback.setStyleSheet(
+                    f"color: {COLORS['green']}; padding: 10px; font-weight: bold;"
+                    f"border: 2px solid {COLORS['green']}; border-radius: 4px;"
+                )
+                self.analysis_received = True
+                return
+            if score.is_mate():
                 pv = info.get("pv")
                 if pv:
                     self.last_known_move = pv[0]
                     self.chess_board.set_best_move(pv[0])
                     self.lbl_best.setText(pv[0].uci())
                     self.lbl_pv.setText("")
-                    self.lbl_feedback.setText(f"CHECKMATE IN {abs(mate)}!")
+                    self.lbl_feedback.setText(f"Forced mate in {abs(mate)} moves")
                     self.lbl_feedback.setStyleSheet(
                         f"color: {COLORS['green']}; padding: 10px;"
                         f"border: 1px solid {COLORS['green']}; border-radius: 4px;"
