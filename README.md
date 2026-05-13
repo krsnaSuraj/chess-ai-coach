@@ -70,8 +70,8 @@ Available as both a **desktop application** (PyQt6) and a **web application** (F
 
 ```bash
 # Clone the repository
-git clone https://github.com/krsnaSuraj/chess-ai-coach.git
-cd chess-ai-coach
+git clone https://github.com/krsnaSuraj/chess-coach.git
+cd chess-coach
 
 # Install dependencies
 pip install -r requirements.txt
@@ -156,7 +156,7 @@ display:
 ## 📂 Project Structure
 
 ```
-chess-ai-coach/
+chess-coach/
 ├── run.py              # Launcher (desktop / web)
 ├── main.py             # Desktop entry point
 ├── server.py           # Web server (FastAPI)
@@ -202,6 +202,6 @@ Stockfish is distributed under the GPLv3 license.
 
 **Made with ❤️ for the chess community**
 
-[Report Bug](https://github.com/krsnaSuraj/chess-ai-coach/issues) · [Request Feature](https://github.com/krsnaSuraj/chess-ai-coach/issues)
+[Report Bug](https://github.com/krsnaSuraj/chess-coach/issues) · [Request Feature](https://github.com/krsnaSuraj/chess-coach/issues)
 
 </div>

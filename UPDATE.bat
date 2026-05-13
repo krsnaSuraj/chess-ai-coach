@@ -18,7 +18,7 @@ git remote get-url origin >nul 2>&1
 if %errorlevel% neq 0 (
     echo First time setup:
     echo 1. Create repo on GitHub: https://github.com/new
-    echo 2. Name: chess-ai-coach
+    echo 2. Name: chess-coach or chess-trainer
     echo.
     set /p url="GitHub URL: "
     if "%url%"=="" exit /b
@@ -46,7 +46,7 @@ if %has_changes% equ 0 (
     if "%unpushed%"=="0" (
         echo Everything is up to date with GitHub.
         echo.
-        echo Project URL: https://github.com/krsnaSuraj/chess-ai-coach
+        echo Project URL: https://github.com/krsnaSuraj/chess-coach
         pause
         exit /b
     )
