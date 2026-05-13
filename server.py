@@ -266,7 +266,7 @@ def _run_coach_analysis_safe() -> dict | None:
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 if __name__ == "__main__":
-    import uvicorn, socket
+    import uvicorn, socket, subprocess
 
     # Validate setup before starting
     errors = []
@@ -291,16 +291,29 @@ if __name__ == "__main__":
         print()
         exit(1)
 
+    # Find a free port
+    port = 8000
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        sock.bind(("0.0.0.0", port))
+        sock.close()
+    except OSError:
+        sock.close()
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.bind(("0.0.0.0", 0))
+        port = sock.getsockname()[1]
+        sock.close()
+
     hostname = socket.gethostname()
     local_ip = socket.gethostbyname(hostname)
     print()
     print("=" * 50)
     print("  Chess Coach Web Server is running!")
     print("=" * 50)
-    print(f"  PC:  http://localhost:8000")
-    print(f"  Phone:  http://{local_ip}:8000")
+    print(f"  PC:  http://localhost:{port}")
+    print(f"  Phone:  http://{local_ip}:{port}")
     print("=" * 50)
     print("  Paste the Phone URL in your mobile browser")
     print("=" * 50)
     print()
-    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="warning")
+    uvicorn.run(app, host="0.0.0.0", port=port, log_level="warning")

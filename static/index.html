@@ -333,7 +333,8 @@ function setStatus(msg) { document.getElementById('status').textContent = msg; }
 
 function handleError(msg) {
     console.error(msg);
-    document.getElementById('status').textContent = 'Connection Error';
+    const text = typeof msg === 'string' ? msg : (msg.message || 'Connection Error');
+    document.getElementById('status').textContent = text;
     document.getElementById('status').style.color = '#f85149';
 }
 
