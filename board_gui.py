@@ -1,9 +1,9 @@
 import sys, math, os
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QHBoxLayout, QLabel, QListWidget, QMessageBox,
-                             QFrame, QProgressBar)
+                             QFrame, QProgressBar, QPushButton)
 from PyQt6.QtGui import (QPainter, QColor, QPen, QFont, QPixmap,
-                          QPainterPath)
+                          QPainterPath, QShortcut, QKeySequence)
 from PyQt6.QtCore import Qt, QRectF, pyqtSignal, QPoint, QPointF, QTimer
 
 import chess
@@ -422,6 +422,8 @@ class MainWindow(QMainWindow):
         self.last_known_move = None
         self.analysis_received = False
 
+        self.redo_stack = []
+
         self._heartbeat = QTimer()
         self._heartbeat.timeout.connect(self._heartbeat_check)
         self._heartbeat.setInterval(2000)
@@ -589,6 +591,37 @@ class MainWindow(QMainWindow):
         self.lbl_feedback.setAlignment(Qt.AlignmentFlag.AlignTop)
         sidebar_layout.addWidget(self.lbl_feedback, stretch=1)
 
+        btn_row = QHBoxLayout()
+        btn_row.setSpacing(6)
+        self.btn_undo = QPushButton("Undo")
+        self.btn_undo.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {COLORS['bg']};
+                color: {COLORS['text']};
+                border: 1px solid {COLORS['border']};
+                border-radius: 4px;
+                padding: 6px 12px;
+                font-size: 11px;
+            }}
+            QPushButton:hover {{
+                border-color: {COLORS['accent']};
+                background-color: {COLORS['sidebar']};
+            }}
+            QPushButton:disabled {{
+                color: {COLORS['text_dim']};
+                border-color: {COLORS['border']};
+            }}
+        """)
+        self.btn_undo.clicked.connect(self._undo)
+        btn_row.addWidget(self.btn_undo)
+
+        self.btn_redo = QPushButton("Redo")
+        self.btn_redo.setStyleSheet(self.btn_undo.styleSheet())
+        self.btn_redo.clicked.connect(self._redo)
+        btn_row.addWidget(self.btn_redo)
+
+        sidebar_layout.addLayout(btn_row)
+
         s5 = QLabel("MOVE HISTORY")
         s5.setObjectName("section")
         sidebar_layout.addWidget(s5)
@@ -597,6 +630,9 @@ class MainWindow(QMainWindow):
         sidebar_layout.addWidget(self.move_list, stretch=2)
 
         layout.addWidget(sidebar, stretch=1)
+
+        QShortcut(QKeySequence("Ctrl+Z"), self).activated.connect(self._undo)
+        QShortcut(QKeySequence("Ctrl+Y"), self).activated.connect(self._redo)
 
         self.statusBar().setStyleSheet(f"""
             QStatusBar {{
@@ -627,6 +663,49 @@ class MainWindow(QMainWindow):
             self.position_version += 1
             self.analysis_received = False
             self.last_known_move = None
+            self.redo_stack.clear()
+
+            move_num = (len(self.board.move_stack) + 1) // 2
+            turn = "W" if self.board.turn == chess.BLACK else "B"
+            item_text = f"{move_num}{turn}  {san}"
+            self.move_list.addItem(item_text)
+            self.move_list.scrollToBottom()
+            self._undo_san = (move, item_text)
+
+            self.chess_board.set_board(self.board)
+            self._update_feedback()
+
+        except Exception as e:
+            print(f"Move error: {e}")
+
+    def _undo(self):
+        if not self.board.move_stack:
+            return
+        try:
+            self.engine_handler.stop_analysis()
+            item = self.move_list.takeItem(self.move_list.count() - 1)
+            item_text = item.text() if item else ""
+            move = self.board.pop()
+            self.redo_stack.append((move, item_text))
+            self.position_version += 1
+            self.analysis_received = False
+            self.last_known_move = None
+
+            self.chess_board.set_board(self.board)
+            self._update_feedback()
+        except Exception as e:
+            print(f"Undo error: {e}")
+
+    def _redo(self):
+        if not self.redo_stack:
+            return
+        try:
+            self.engine_handler.stop_analysis()
+            move, san = self.redo_stack.pop()
+            self.board.push(move)
+            self.position_version += 1
+            self.analysis_received = False
+            self.last_known_move = None
 
             move_num = (len(self.board.move_stack) + 1) // 2
             turn = "W" if self.board.turn == chess.BLACK else "B"
@@ -635,9 +714,8 @@ class MainWindow(QMainWindow):
 
             self.chess_board.set_board(self.board)
             self._update_feedback()
-
         except Exception as e:
-            print(f"Move error: {e}")
+            print(f"Redo error: {e}")
 
     def run_analysis(self):
         self.analyzing_fen = self.board.fen()

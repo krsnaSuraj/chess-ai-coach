@@ -23,6 +23,7 @@ class GameController:
         self.game_phase = GamePhase.AWAITING_COLOR
         self.move_number = 1
         self.lock = threading.Lock()
+        self.redo_stack = []
 
     def start_game(self, human_is_white: bool):
         with self.lock:
@@ -30,13 +31,39 @@ class GameController:
             self.human_side = chess.WHITE if human_is_white else chess.BLACK
             self.move_number = 1
             self.game_phase = GamePhase.PLAYING
+            self.redo_stack.clear()
 
     def record_move(self, move: chess.Move):
         self.board.push(move)
+        self.redo_stack.clear()
         if self.board.turn == chess.WHITE:
             self.move_number += 1
         if self.board.is_game_over():
             self.game_phase = GamePhase.GAME_OVER
+
+    def undo(self):
+        if not self.board.move_stack:
+            return False
+        with self.lock:
+            move = self.board.pop()
+            self.redo_stack.append(move)
+            if self.board.turn == chess.BLACK:
+                self.move_number -= 1
+            if self.game_phase == GamePhase.GAME_OVER:
+                self.game_phase = GamePhase.PLAYING
+        return True
+
+    def redo(self):
+        if not self.redo_stack:
+            return False
+        with self.lock:
+            move = self.redo_stack.pop()
+            self.board.push(move)
+            if self.board.turn == chess.WHITE:
+                self.move_number += 1
+            if self.board.is_game_over():
+                self.game_phase = GamePhase.GAME_OVER
+        return True
 
 
 game_controller = GameController()
@@ -118,6 +145,30 @@ def start_game(request: StartGameRequest):
 @app.get("/api/game_state")
 def get_game_state():
     try:
+        return _build_response()
+    except Exception as e:
+        return _error_response(str(e))
+
+
+@app.post("/api/undo")
+def undo_move():
+    try:
+        if game_controller.game_phase != GamePhase.PLAYING:
+            return _error_response("No game in progress")
+        if not game_controller.undo():
+            return _error_response("No moves to undo")
+        return _build_response()
+    except Exception as e:
+        return _error_response(str(e))
+
+
+@app.post("/api/redo")
+def redo_move():
+    try:
+        if game_controller.game_phase != GamePhase.PLAYING:
+            return _error_response("No game in progress")
+        if not game_controller.redo():
+            return _error_response("No moves to redo")
         return _build_response()
     except Exception as e:
         return _error_response(str(e))
