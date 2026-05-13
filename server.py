@@ -78,11 +78,14 @@ else:
 
 ENGINE_PATH = config.get("engine", {}).get("path", "stockfish.exe")
 MOVETIME = config.get("engine", {}).get("movetime", 2000) / 1000.0
+WEB_MOVETIME = 0.5  # 500ms for faster web responses
 
 engine = None
 
 @asynccontextmanager
 async def lifespan(app):
+    # Pre-start engine so first request is fast
+    get_engine()
     yield
     global engine
     if engine:
@@ -235,7 +238,7 @@ def _run_coach_analysis_safe() -> dict | None:
     if eng is None:
         return None
     try:
-        info = eng.analyse(game_controller.board, chess.engine.Limit(time=MOVETIME))
+        info = eng.analyse(game_controller.board, chess.engine.Limit(time=WEB_MOVETIME))
         score = info.get("score")
         cp = score.white().score(mate_score=10000)
         mate = score.white().mate()
