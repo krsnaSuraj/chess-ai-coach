@@ -35,21 +35,29 @@ set has_changes=%errorlevel%
 
 for /f %%i in ('git rev-list --count origin/main..HEAD 2^>nul') do set unpushed=%%i
 
+echo Current status:
+for /f %%i in ('git rev-list --count HEAD 2^>nul') do set total=%%i
+echo   Local commits: %total%
+echo   Unpushed:      %unpushed%
+echo   Uncommitted:   %has_changes% ^(0=clean, 1=changes^)
+echo.
+
 if %has_changes% equ 0 (
     if "%unpushed%"=="0" (
-        echo Everything up to date.
+        echo Everything is up to date with GitHub.
+        echo.
+        echo Project URL: https://github.com/krsnaSuraj/chess-ai-coach
         pause
         exit /b
     )
-    echo Pushing %unpushed% pending commit^(s^)...
+    echo Found %unpushed% unpushed commit^(s^). Pushing...
     git push
-    if %errorlevel% equ 0 ( echo SUCCESS! ) else ( echo FAILED. )
+    if %errorlevel% equ 0 ( echo SUCCESS! Pushed to GitHub. ) else ( echo FAILED. )
     pause
     exit /b
 )
 
-echo.
-echo Changes to commit:
+echo Changes found:
 git diff --cached --stat
 echo.
 echo Press Enter to commit and push ^(Ctrl+C to cancel^)
