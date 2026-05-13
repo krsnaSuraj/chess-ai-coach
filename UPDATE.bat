@@ -7,7 +7,6 @@ echo    Chess AI Coach - GitHub Update Tool
 echo ========================================
 echo.
 
-REM Check if git is installed
 git --version >nul 2>&1
 if %errorlevel% neq 0 (
     echo Git is not installed. Download from: https://git-scm.com/downloads
@@ -15,12 +14,11 @@ if %errorlevel% neq 0 (
     exit /b
 )
 
-REM First time setup: no remote configured yet
 git remote get-url origin >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [FIRST TIME SETUP - Project Owner Only]
+    echo [FIRST TIME SETUP]
     echo.
-    echo Create a repository on GitHub first:
+    echo Create a repository on GitHub:
     echo   Step 1: Go to https://github.com/new
     echo   Step 2: Repository name: chess-ai-coach
     echo   Step 3: Click "Create repository"
@@ -39,20 +37,8 @@ if %errorlevel% neq 0 (
         echo SUCCESS! Project published on GitHub.
     ) else (
         echo.
-        echo ERROR: Push failed.
+        echo ERROR: Push failed. Make sure the URL is correct.
     )
-    pause
-    exit /b
-)
-
-REM Check if this is the original repo (vs a fork/clone)
-git remote get-url origin | findstr /i "krsnaSuraj" >nul
-if %errorlevel% neq 0 (
-    echo This appears to be a fork or clone.
-    echo UPDATE.bat is only for the repository owner.
-    echo.
-    echo If you want to contribute, fork the repo on GitHub
-    echo and submit a pull request instead.
     pause
     exit /b
 )
@@ -86,7 +72,8 @@ if %errorlevel% equ 0 (
     echo SUCCESS! Changes pushed to GitHub.
 ) else (
     echo.
-    echo ERROR: Push failed.
+    echo Push failed. This is normal if you are not the repository owner.
+    echo Only krsnaSuraj can push updates to this repo.
 )
 
 pause
