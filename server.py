@@ -267,6 +267,30 @@ app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 if __name__ == "__main__":
     import uvicorn, socket
+
+    # Validate setup before starting
+    errors = []
+    static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+    if not os.path.exists(static_dir):
+        errors.append("'static' folder not found")
+    if not os.path.exists(os.path.join(static_dir, "index.html")):
+        errors.append("static/index.html not found")
+    if not os.path.exists(ENGINE_PATH) and not os.path.exists(os.path.join(os.getcwd(), ENGINE_PATH)):
+        errors.append(f"Stockfish not found at '{ENGINE_PATH}'")
+
+    if errors:
+        print()
+        print("=" * 50)
+        print("  SETUP ERRORS")
+        print("=" * 50)
+        for e in errors:
+            print(f"  ! {e}")
+        print("=" * 50)
+        print("  Fix the issues above and restart.")
+        print("=" * 50)
+        print()
+        exit(1)
+
     hostname = socket.gethostname()
     local_ip = socket.gethostbyname(hostname)
     print()

@@ -153,6 +153,12 @@
 <script src="js/chessboard.js"></script>
 
 <script>
+// Check if page is opened directly (file://) instead of through server
+if (window.location.protocol === 'file:') {
+    document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px;text-align:center;"><h2 style="color:#f85149;margin-bottom:20px;">Cannot open directly</h2><p style="color:#8b949e;font-size:16px;max-width:400px;">This file must be opened through the Chess Coach web server.</p><br><p style="color:#8b949e;font-size:14px;">Run this command first:</p><pre style="background:#161b22;padding:12px 20px;border-radius:6px;color:#58a6ff;margin-top:10px;">python run.py web</pre><p style="color:#8b949e;font-size:14px;margin-top:10px;">Then open http://localhost:8000</p></div>';
+    throw new Error('Opened directly - need server');
+}
+
 const STATE = { game: new Chess(), board: null, isWhite: true, busy: false };
 
 function initGame(isWhite) {
