@@ -22,7 +22,6 @@ python run.py web
 # Custom port:
 python run.py web 8080
 ```
-Open http://localhost:8000 in your browser.
 
 ---
 
@@ -44,13 +43,11 @@ Open http://localhost:8000 in your browser.
 
 ---
 
-## Controls
+## How It Works
 
-- **Desktop**: Click and drag pieces. Sidebar shows coach data.
-- **Web**: Same drag-and-drop. Status bar shows coach data.
-
-After selecting your color, play both sides — Stockfish only gives advice
-during YOUR turn.
+1. Select your color (White or Black)
+2. Play both sides — Stockfish only gives advice during your turn
+3. The dashboard shows evaluation, best move, and coach feedback
 
 ---
 
@@ -66,39 +63,16 @@ during YOUR turn.
 
 ---
 
-## Project Structure
-
-```
-chess/
-├── run.py              # Launcher (desktop / web)
-├── main.py             # Desktop entry point
-├── server.py           # Web server (FastAPI)
-├── board_gui.py        # Desktop GUI (PyQt6)
-├── engine_handler.py   # Stockfish thread manager
-├── utils.py            # Config loader
-├── config.yaml         # Settings
-├── stockfish.exe       # Chess engine
-├── HOW_TO_USE.md       # This file
-├── requirements.txt
-└── static/
-    ├── index.html
-    ├── js/             # chess.js, chessboard.js, jquery
-    ├── css/            # chessboard.css
-    └── img/chesspieces/wikipedia/   # 12 piece PNGs
-```
-
----
-
 ## Configuration
 
 Edit `config.yaml`:
 
 ```yaml
 engine:
-  path: "stockfish.exe"  # Engine binary
-  threads: 2             # CPU threads
-  hash: 1024             # Hash size (MB)
-  movetime: 2000         # Analysis time (ms)
+  path: "stockfish.exe"
+  threads: 2
+  hash: 1024
+  movetime: 2000
 
 display:
   dark_square: "#B58863"
@@ -109,13 +83,51 @@ display:
 
 ---
 
+## Publishing to GitHub
+
+### First Time
+1. Create a repository on GitHub named `chess-ai-coach`
+2. Double-click `UPDATE.bat` in the project folder
+3. Paste your GitHub repository URL when prompted
+
+### Future Updates
+After making code changes, double-click `UPDATE.bat`:
+- It will detect all changes
+- Commit and push to GitHub automatically
+
+---
+
+## Project Structure
+
+```
+chess-ai-coach/
+├── run.py              # Launcher (desktop / web)
+├── main.py             # Desktop entry point
+├── server.py           # Web server (FastAPI)
+├── board_gui.py        # Desktop GUI (PyQt6)
+├── engine_handler.py   # Stockfish thread manager
+├── utils.py            # Config loader
+├── config.yaml         # Settings
+├── stockfish.exe       # Chess engine
+├── UPDATE.bat          # GitHub update tool
+├── HOW_TO_USE.md       # This file
+├── requirements.txt
+└── static/
+    ├── index.html
+    ├── js/
+    ├── css/
+    └── img/chesspieces/wikipedia/
+```
+
+---
+
 ## Troubleshooting
 
-**Q: Desktop app doesn't open?**
-Make sure you have PyQt6 installed and a display connected.
+**Desktop app doesn't open?**
+Ensure PyQt6 is installed and a display is connected.
 
-**Q: Web server shows "Connection Error"?**
-Ensure Stockfish is present at the path in `config.yaml` and port 8000 is free.
+**Web server shows "Connection Error"?**
+Check that Stockfish is at the path in `config.yaml` and port 8000 is free.
 
-**Q: Engine analysis is slow?**
+**Engine analysis is slow?**
 Reduce `movetime` in config.yaml or increase `threads` (max = CPU cores).

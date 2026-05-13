@@ -72,8 +72,8 @@ if %errorlevel% equ 0 (
     echo SUCCESS! Changes pushed to GitHub.
 ) else (
     echo.
-    echo Push failed. This is normal if you are not the repository owner.
-    echo Only krsnaSuraj can push updates to this repo.
+    echo Push failed. This is expected if you are not the repository owner.
+    echo Only the original maintainer can push updates to this repository.
 )
 
 pause
