@@ -18,20 +18,32 @@
 
 ## 🎯 Overview
 
-Chess Coach is a real-time chess analysis tool that integrates the **Stockfish 17** engine into a dual-interface application. It evaluates every position as you play, detects blunders, suggests best moves, and presents principal variation lines — all without interrupting your flow.
+Chess Coach is a real-time chess analysis sidekick that integrates **Stockfish 17** into a dual-interface application. It evaluates positions as *you* play your selected side, detects blunders, suggests best moves, and presents principal variation lines — while staying silent when you manually enter opponent moves.
 
-Choose your mode:
+**Perfect for:** Online chess (chess.com, lichess) where you play one side and want expert guidance without distraction.
 
-| Mode | Use Case |
-|------|----------|
+Choose your interface:
+
+| Interface | Use Case |
+|-----------|----------|
 | **Desktop GUI** (PyQt6) | Full-featured analysis with eval bar, coach dashboard, and move history |
-| **Web Interface** (FastAPI) | Lightweight browser-based access — play on your PC, view on your phone |
+| **Web Interface** (FastAPI) | Lightweight browser-based access — play on PC, analyze on phone (same LAN) |
 
 ---
 
 ## ✨ Features
 
 <table>
+  <tr>
+    <td>
+      <h4>🧑‍🤝‍🧑 Single-Side Sidekick</h4>
+      Select your side (White/Black). Coach analyzes only your moves. You manually enter opponent moves — coach stays silent during opponent's turn.
+    </td>
+    <td>
+      <h4>🎯 Unrestricted Dragging</h4>
+      Drag any piece at any time. Legal move validation handled by engine. Perfect for entering opponent's moves on the board.
+    </td>
+  </tr>
   <tr>
     <td>
       <h4>⚡ Real-time Evaluation</h4>
@@ -48,28 +60,28 @@ Choose your mode:
       Visual arrow overlay and UCI display showing the top engine line for the current position.
     </td>
     <td>
-      <h4>🧑‍🤝‍🧑 Analysis Mode</h4>
-      Play both sides freely — ideal for puzzle-solving, position study, or reviewing master games.
+      <h4>📊 Coach Dashboard</h4>
+      Eval bar, advantage label, engine depth, PV line, and natural-language feedback panel (desktop).
     </td>
   </tr>
   <tr>
-    <td>
-      <h4>📊 Coach Dashboard</h4>
-      Eval bar, advantage label, engine depth, PV line, and natural-language feedback panel.
-    </td>
     <td>
       <h4>↩️ Undo / Redo</h4>
       Full move-history navigation with Ctrl+Z / Ctrl+Y shortcuts on both desktop and web.
     </td>
-  </tr>
-  <tr>
     <td>
       <h4>🌐 LAN Multi-device</h4>
       Web server auto-detects your LAN IP — analyze on your phone while the engine runs on your PC.
     </td>
+  </tr>
+  <tr>
     <td>
       <h4>⚙️ Configurable Engine</h4>
       Tweak Stockfish threads, hash size, and analysis time via <code>config.yaml</code>.
+    </td>
+    <td>
+      <h4>🔄 Analysis Cache</h4>
+      Smart caching eliminates redundant engine calls when reviewing positions.
     </td>
   </tr>
 </table>
@@ -118,27 +130,72 @@ Then open **http://localhost:8000** in your browser, or the LAN URL printed in t
 
 ## 🖥️ Usage
 
-### Desktop GUI
+### Desktop GUI Workflow
 
 1. Run `python run.py`
-2. Select your color — **White**, **Black**, or **Both** (analysis mode)
-3. Drag pieces to play; the Coach Dashboard updates automatically
-4. Use **Undo** / **Redo** buttons or `Ctrl+Z` / `Ctrl+Y`
-5. **New Game** restarts with a fresh color choice
+2. Select your color — **White** or **Black** (your side in the online game)
+3. Play your move → coach analyzes and displays best move + feedback
+4. Opponent moves online → **drag their pieces on the app to record the move**
+5. Coach shows "Waiting — *Color*'s turn" during opponent's turn (no analysis)
+6. Repeat until game ends
+7. Use **Undo** / **Redo** buttons or `Ctrl+Z` / `Ctrl+Y` to navigate history
+8. **New Game** restarts with a fresh color choice
+
+**Key Insight:** You can drag *any* piece at *any* time (unrestricted), so entering opponent moves is seamless. The coach simply won't analyze during opponent's turn.
 
 The sidebar shows:
 
-| Panel | Content |
-|-------|---------|
-| **Turn Indicator** | Current side to move, check/checkmate status |
-| **Evaluation** | Numeric eval (centipawns), colored eval bar, advantage label |
-| **Best Line** | Top engine move and 4-ply principal variation |
-| **Coach Feedback** | Natural-language position assessment + blunder alerts |
-| **Move History** | Annotated move list with SAN notation |
+| Panel | Content | Shows When |
+|-------|---------|-----------|
+| **Turn Indicator** | Current side to move, check/checkmate status | Always |
+| **Evaluation** | Numeric eval (centipawns), colored eval bar, advantage label | Your turn only |
+| **Best Line** | Top engine move and 4-ply principal variation | Your turn only |
+| **Coach Feedback** | Natural-language position assessment + blunder alerts | Your turn only |
+| **Move History** | Annotated move list with SAN notation | Always |
 
-### Web Interface
+### Web Interface Workflow
 
-Same chess logic, served over HTTP. The web frontend uses [chessboard.js](https://chessboardjs.com/) and [chess.js](https://github.com/jhlywa/chess.js) for drag-and-drop interaction. Analysis results are returned with every move — no polling required.
+Same chess logic, served over HTTP:
+
+1. Run `python run.py web` (or `python run.py web 8080` for a custom port)
+2. Open **http://localhost:8000** in your browser (or the LAN URL for other devices)
+3. Select your color
+4. Play as above — drag pieces freely to enter both your moves and opponent's moves
+5. Coach analysis appears only during your turn
+6. Undo / Redo via buttons or keyboard shortcuts
+
+The web frontend uses [chessboard.js](https://chessboardjs.com/) and [chess.js](https://github.com/jhlywa/chess.js) for drag-and-drop interaction. Analysis results are returned with every move via FastAPI endpoints — no polling required.
+
+---
+
+## 💡 The Sidekick Workflow
+
+**Typical online chess session with Chess Coach:**
+
+```
+You (Playing Online at chess.com, lichess, etc.)          Chess Coach App
+─────────────────────────────────────────────────────────────────────────
+Play move (e.g., 1.e4)                                   → [Coach analyzes]
+                                                         → "Best: e4, Position equal"
+                                                         
+Opponent plays (e.g., ...c5)                             [You drag c7→c5]
+                                                         [Coach says "Waiting — Black's turn"]
+                                                         (No analysis during opponent's turn)
+                                                         
+Play move (e.g., 2.Nf3)                                  → [Coach analyzes]
+                                                         → "Best: Nf3, You're better"
+                                                         
+Opponent plays (e.g., ...d6)                             [You drag d7→d6]
+                                                         [Coach stays silent]
+                                                         
+[… game continues …]
+```
+
+**Why this design?**
+
+- **Focus:** No distraction during opponent's turn — the app doesn't bombard you with position evals while they're thinking
+- **Learning:** Coach suggests your moves, but opponent's moves are your responsibility (you enter them manually)
+- **Flexibility:** Unrestricted dragging lets you enter any move instantly without frustration
 
 ---
 
@@ -212,12 +269,14 @@ display:
 
 ### Data Flow
 
-1. **User moves** a piece (desktop drag or web click)
-2. **Move is validated** against legal moves
+1. **User moves** a piece (desktop drag or web click) — any piece, any time (unrestricted dragging)
+2. **Move is validated** against legal moves by the chess engine
 3. **Board state updates** and analysis cache invalidates
-4. **Engine analyzes** the new position (threaded in desktop, blocking in web with configurable timeout)
-5. **Result** (eval, best move, PV, depth) flows back to the UI
-6. **Blunder check** compares current eval vs. previous position eval
+4. **Coach decision:** Is it the user's selected side's turn?
+   - ✅ **YES** → Engine analyzes the position; returns eval, best move, PV, depth, blunder check
+   - ❌ **NO** → Coach silent; board updates without analysis (waiting state)
+5. **UI updates** with analysis or "Waiting" message depending on whose turn it is
+6. **Blunder detection** (only on user's turn) compares current eval vs. previous position eval
 
 ---
 
