@@ -102,16 +102,18 @@ Choose your interface:
 ### Prerequisites
 
 - **Python 3.10+**
-- **Stockfish 17** — download from [stockfishchess.org](https://stockfishchess.org/download/) and place `stockfish.exe` (Windows) or `stockfish` (Linux/macOS) in the project root, or set a custom path in `config.yaml`.
+- **Stockfish 17** — download from [stockfishchess.org](https://stockfishchess.org/download/)
 
-### Installation
+### One-Click Setup (Windows)
 
-```bash
-git clone https://github.com/krsnaSuraj/chess-coach.git
-cd chess-coach
+1. Clone the repo: `git clone https://github.com/krsnaSuraj/chess-coach.git && cd chess-coach`
+2. **Double-click `install.bat`** (or run `python install.bat` manually)
+3. Download Stockfish and place `stockfish.exe` in the project root
+4. Done! Run the app below
 
-pip install -r requirements.txt
-```
+### Manual Setup (All Platforms)
+
+For detailed installation instructions for Windows, macOS, and Linux, see **[INSTALLATION.md](INSTALLATION.md)**
 
 ### Launch
 
@@ -119,12 +121,10 @@ pip install -r requirements.txt
 # Desktop GUI
 python run.py
 
-# Web server (port auto-detects if 8000 is busy)
+# Web server (http://localhost:8000)
 python run.py web
 python run.py web 8080    # custom port
 ```
-
-Then open **http://localhost:8000** in your browser, or the LAN URL printed in the terminal to connect from another device.
 
 ---
 
@@ -284,21 +284,46 @@ display:
 
 ```
 chess-coach/
-├── run.py                    # Launcher — desktop or web
-├── server.py                 # FastAPI web server + GameController
-├── board_gui.py              # PyQt6 desktop GUI (board + coach dashboard)
-├── engine_handler.py         # Stockfish wrapper + analysis thread
-├── utils.py                  # Config loader
-├── config.yaml               # Engine and display settings
-├── requirements.txt          # Python dependencies
-├── stockfish.exe             # Stockfish 17 binary (user-provided)
-├── static/
-│   ├── index.html            # Web frontend
-│   ├── css/                  # chessboard.js styles
-│   ├── js/                   # chessboard.js, chess.js, jQuery
-│   └── img/chesspieces/      # Piece sprite images
-└── screenshots/              # App previews
+├── 📄 run.py                    # Launcher (desktop or web mode)
+├── 📄 server.py                 # FastAPI web server + GameController
+├── 📄 board_gui.py              # PyQt6 desktop GUI (board + dashboard)
+├── 📄 engine_handler.py         # Stockfish engine wrapper + threading
+├── 📄 utils.py                  # Config loader
+│
+├── ⚙️ config.yaml               # Engine & display settings
+├── 📋 requirements.txt          # Python package dependencies
+├── 📋 INSTALLATION.md           # Detailed setup guide (Windows/macOS/Linux)
+├── 📋 README.md                 # This file
+├── 📋 LICENSE                   # MIT License
+├── 📋 .gitignore                # Git ignore rules
+│
+├── 🪟 install.bat               # Windows one-click installer
+├── 🪟 UPDATE.bat                # Windows update helper
+├── 📦 stockfish.exe             # Stockfish 17 binary (user-provided)
+│
+├── 🗂️ .venv/                     # Virtual environment (created by install)
+├── 🗂️ __pycache__/              # Python cache (auto-generated)
+│
+├── 🗂️ static/                    # Web frontend
+│   ├── 📄 index.html            # Main web page
+│   ├── 🗂️ css/
+│   │   └── chessboard.css       # Chessboard styles
+│   ├── 🗂️ js/
+│   │   ├── chessboard.js        # Chessboard library
+│   │   ├── chess.js             # Chess logic library
+│   │   └── jquery.min.js        # jQuery library
+│   └── 🗂️ img/
+│       └── 🗂️ chesspieces/
+│           └── 🗂️ wikipedia/    # Piece images (PNG)
+│               ├── wP.png, wN.png, wB.png, wR.png, wQ.png, wK.png
+│               └── bP.png, bN.png, bB.png, bR.png, bQ.png, bK.png
+│
+└── 🗂️ screenshots/              # App screenshots
+    ├── Side-by-side.png         # Desktop GUI
+    └── Server.png               # Web interface
 ```
+
+For detailed setup and folder navigation, see **[INSTALLATION.md](INSTALLATION.md)**
 
 ---
 
