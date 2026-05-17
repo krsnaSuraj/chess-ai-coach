@@ -153,13 +153,28 @@
 <script src="js/chessboard.js"></script>
 
 <script>
-// Check if page is opened directly (file://) instead of through server
 if (window.location.protocol === 'file:') {
     document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px;text-align:center;"><h2 style="color:#f85149;margin-bottom:20px;">Cannot open directly</h2><p style="color:#8b949e;font-size:16px;max-width:400px;">This file must be opened through the Chess Coach web server.</p><br><p style="color:#8b949e;font-size:14px;">Run this command first:</p><pre style="background:#161b22;padding:12px 20px;border-radius:6px;color:#58a6ff;margin-top:10px;">python run.py web</pre><p style="color:#8b949e;font-size:14px;margin-top:10px;">Then open http://localhost:8000</p></div>';
     throw new Error('Opened directly - need server');
 }
 
 const STATE = { game: new Chess(), board: null, isWhite: true, busy: false };
+
+async function checkHealth() {
+    try {
+        const res = await fetch('/api/health');
+        if (!res.ok) throw new Error('Server not ready');
+        const data = await res.json();
+        if (!data.engine_running) {
+            setStatus('Server running, but engine failed to start');
+        }
+    } catch (e) {
+        setStatus('Cannot connect to server. Run: python run.py web');
+        throw e;
+    }
+}
+
+checkHealth().catch(() => {});
 
 function initGame(isWhite) {
     STATE.isWhite = isWhite;
@@ -183,19 +198,25 @@ function initGame(isWhite) {
 
 function onDragStart(source, piece) {
     if (STATE.busy || STATE.game.game_over()) return false;
+    if ((STATE.game.turn() === 'w') !== STATE.isWhite) return false;
     return true;
 }
 
 async function onDrop(source, target) {
-    const move = STATE.game.move({ from: source, to: target, promotion: 'q' });
-    if (move === null) return 'snapback';
+    const moveObj = STATE.game.move({ from: source, to: target, promotion: 'q' });
+    if (moveObj === null) return 'snapback';
 
     STATE.busy = true;
     clearArrow();
     setStatus("Processing...");
 
+    let moveUci = moveObj.from + moveObj.to;
+    if (moveObj.promotion) {
+        moveUci += moveObj.promotion;
+    }
+
     try {
-        const data = await apiCall('/api/human_move', { move_uci: move.from + move.to });
+        const data = await apiCall('/api/human_move', { move_uci: moveUci });
         if (!data.ok) {
             STATE.game.undo();
             STATE.board.position(STATE.game.fen());
@@ -267,6 +288,10 @@ function processResponse(data) {
             document.getElementById('eval').style.color = '#8b949e';
             document.getElementById('evalLabel').textContent = '';
         }
+    } else if (data.mode === 'idle') {
+        const turn = STATE.game.turn() === 'w' ? "White" : "Black";
+        setStatus(turn + "'s Turn");
+        clearArrow();
     }
 }
 

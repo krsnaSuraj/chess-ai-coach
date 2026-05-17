@@ -21,6 +21,10 @@ env/
 Thumbs.db
 .DS_Store
 
+# Binaries
+stockfish.exe
+stockfish
+
 # Temp test files
 _*.py
 _*.ps1

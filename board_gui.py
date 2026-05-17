@@ -10,7 +10,6 @@ import chess
 from utils import load_config
 from engine_handler import EngineHandler
 
-# === Constants ===
 PIECE_IMAGES_DIR = "static/img/chesspieces/wikipedia"
 COLORS = {
     "bg": "#0d1117",
@@ -52,6 +51,7 @@ class ChessBoard(QWidget):
         self.setMinimumSize(360, 360)
 
         self.flipped = False
+        self.playable_side = None
         self.drag_cache = None
         self.best_move = None
         self.last_move_squares = []
@@ -339,6 +339,8 @@ class ChessBoard(QWidget):
         piece = self.board.piece_at(square)
 
         if piece:
+            if self.playable_side is not None and piece.color != self.playable_side:
+                return
             self.dragged_piece = piece
             self.dragged_square = square
             self.drag_start_pos = pos.toPoint()
@@ -423,6 +425,9 @@ class MainWindow(QMainWindow):
         self.analyzing_version_id = None
         self.last_known_move = None
         self.analysis_received = False
+        self.current_eval = 0.0
+        self.prev_eval = 0.0
+        self.has_prev_eval = False
 
         self.redo_stack = []
 
@@ -433,7 +438,6 @@ class MainWindow(QMainWindow):
 
         self._setup_ui()
 
-        self.run_analysis()
         self._update_feedback()
 
     def _setup_ui(self):
@@ -445,6 +449,7 @@ class MainWindow(QMainWindow):
 
         self.chess_board = ChessBoard(self.config)
         self.chess_board.set_flipped(self.board_flipped)
+        self.chess_board.playable_side = self.user_color
         self.chess_board.set_board(self.board)
         self.chess_board.move_made.connect(self._on_move)
         layout.addWidget(self.chess_board, stretch=3)
@@ -522,13 +527,11 @@ class MainWindow(QMainWindow):
         sidebar_layout.setContentsMargins(10, 12, 10, 12)
         sidebar_layout.setSpacing(8)
 
-        # ── HEADER ──
         heading = QLabel("COACH DASHBOARD")
         heading.setObjectName("heading")
         heading.setAlignment(Qt.AlignmentFlag.AlignCenter)
         sidebar_layout.addWidget(heading)
 
-        # ── TURN INDICATOR ──
         self.lbl_turn = QLabel("White to move")
         self.lbl_turn.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.lbl_turn.setStyleSheet(f"""
@@ -537,7 +540,6 @@ class MainWindow(QMainWindow):
         """)
         sidebar_layout.addWidget(self.lbl_turn)
 
-        # ── EVALUATION SECTION ──
         s1 = QLabel("EVALUATION")
         s1.setObjectName("section")
         sidebar_layout.addWidget(s1)
@@ -586,7 +588,6 @@ class MainWindow(QMainWindow):
         eval_row.addLayout(stats)
         sidebar_layout.addWidget(eval_widget)
 
-        # ── BEST MOVE + PV ──
         s2 = QLabel("BEST LINE")
         s2.setObjectName("section")
         sidebar_layout.addWidget(s2)
@@ -600,7 +601,6 @@ class MainWindow(QMainWindow):
         self.lbl_pv.setWordWrap(True)
         sidebar_layout.addWidget(self.lbl_pv)
 
-        # ── GAME INFO ──
         s3 = QLabel("GAME INFO")
         s3.setObjectName("section")
         sidebar_layout.addWidget(s3)
@@ -609,7 +609,6 @@ class MainWindow(QMainWindow):
         self.lbl_info.setStyleSheet(f"color: {COLORS['text_dim']}; font-size: 10px;")
         sidebar_layout.addWidget(self.lbl_info)
 
-        # ── COACH FEEDBACK ──
         s4 = QLabel("COACH FEEDBACK")
         s4.setObjectName("section")
         sidebar_layout.addWidget(s4)
@@ -620,7 +619,6 @@ class MainWindow(QMainWindow):
         self.lbl_feedback.setAlignment(Qt.AlignmentFlag.AlignTop)
         sidebar_layout.addWidget(self.lbl_feedback, stretch=1)
 
-        # ── BUTTONS ──
         btn_row = QHBoxLayout()
         btn_row.setSpacing(6)
         self.btn_undo = QPushButton("Undo")
@@ -666,7 +664,6 @@ class MainWindow(QMainWindow):
 
         sidebar_layout.addLayout(btn_row)
 
-        # ── MOVE HISTORY ──
         s5 = QLabel("MOVE HISTORY")
         s5.setObjectName("section")
         sidebar_layout.addWidget(s5)
@@ -709,11 +706,9 @@ class MainWindow(QMainWindow):
         """)
         self.statusBar().showMessage("Powered by Stockfish 17")
 
-        self.run_analysis()
-
     def _on_move(self, move):
         try:
-            self.prev_eval = getattr(self, 'current_eval', 0.0)
+            self.prev_eval = self.current_eval
 
             self.engine_handler.stop_analysis()
             self.chess_board.set_best_move(None)
@@ -740,7 +735,6 @@ class MainWindow(QMainWindow):
             item_text = f"{move_num}{turn}  {san}{suffix}"
             self.move_list.addItem(item_text)
             self.move_list.scrollToBottom()
-            self._undo_san = (move, item_text)
 
             self.chess_board.set_board(self.board)
             self._update_feedback()
@@ -753,6 +747,8 @@ class MainWindow(QMainWindow):
             return
         try:
             self.engine_handler.stop_analysis()
+            if self.move_list.count() == 0:
+                return
             item = self.move_list.takeItem(self.move_list.count() - 1)
             item_text = item.text() if item else ""
             move = self.board.pop()
@@ -760,6 +756,7 @@ class MainWindow(QMainWindow):
             self.position_version += 1
             self.analysis_received = False
             self.last_known_move = None
+            self.has_prev_eval = False
 
             self.chess_board.set_board(self.board)
             self._update_feedback()
@@ -785,6 +782,7 @@ class MainWindow(QMainWindow):
             self.last_known_move = None
             self.current_eval = 0.0
             self.prev_eval = 0.0
+            self.has_prev_eval = False
             self.move_list.clear()
             self.lbl_eval.setText("0.00")
             self.lbl_eval.setStyleSheet(f"color: {COLORS['text']}; font-size: 26px; font-weight: bold; font-family: 'Segoe UI', monospace;")
@@ -801,6 +799,7 @@ class MainWindow(QMainWindow):
             self.lbl_engine.setText("Ready")
             self.eval_bar.setValue(1000)
             self.chess_board.set_flipped(self.board_flipped)
+            self.chess_board.playable_side = self.user_color
             self.chess_board.set_board(self.board)
             self._update_feedback()
         except Exception as e:
@@ -816,6 +815,7 @@ class MainWindow(QMainWindow):
             self.position_version += 1
             self.analysis_received = False
             self.last_known_move = None
+            self.has_prev_eval = False
 
             move_num = (len(self.board.move_stack) + 1) // 2
             turn = "W" if self.board.turn == chess.BLACK else "B"
@@ -896,27 +896,26 @@ class MainWindow(QMainWindow):
                 val = 1000 if mate > 0 else -1000
                 cur_eval = float('inf') if mate > 0 else float('-inf')
             else:
-                cp = score.relative.score(mate_score=10000)
-                if self.board.turn == chess.BLACK:
-                    cp = -cp
+                cp = score.white().score(mate_score=10000)
                 text = f"{cp / 100:.2f}"
                 val = max(-1000, min(1000, cp))
                 cur_eval = cp / 100.0
 
+            user_eval = cur_eval if self.user_color == chess.WHITE else -cur_eval
+            user_val = val if self.user_color == chess.WHITE else -val
+
             self.current_eval = cur_eval
+            self.has_prev_eval = True
             depth = info.get("depth", 0)
 
-            # Engine info
             self.lbl_engine.setText(f"Depth {depth}  |  {info.get('seldepth', depth)}")
 
-            # Evaluation text with color
-            eval_color = COLORS['green'] if cur_eval is not None and cur_eval > 0.3 else \
-                         COLORS['red'] if cur_eval is not None and cur_eval < -0.3 else \
+            eval_color = COLORS['green'] if user_eval > 0.3 else \
+                         COLORS['red'] if user_eval < -0.3 else \
                          COLORS['text']
             self.lbl_eval.setStyleSheet(f"color: {eval_color}; font-size: 26px; font-weight: bold; font-family: 'Segoe UI', monospace;")
             self.lbl_eval.setText(text)
 
-            # Advantage label
             if score.is_mate():
                 if mate > 0:
                     self.lbl_advantage.setText("White can mate")
@@ -927,26 +926,24 @@ class MainWindow(QMainWindow):
             else:
                 adv = "Equal"
                 adv_color = COLORS['text_dim']
-                if cur_eval > 0.5:
-                    adv = "White is winning"
+                if user_eval > 0.5:
+                    adv = "You are winning"
                     adv_color = COLORS['green']
-                elif cur_eval > 0.2:
-                    adv = "White is better"
+                elif user_eval > 0.2:
+                    adv = "You are better"
                     adv_color = COLORS['green']
-                elif cur_eval < -0.5:
-                    adv = "Black is winning"
+                elif user_eval < -0.5:
+                    adv = "Opponent is winning"
                     adv_color = COLORS['red']
-                elif cur_eval < -0.2:
-                    adv = "Black is better"
+                elif user_eval < -0.2:
+                    adv = "Opponent is better"
                     adv_color = COLORS['red']
                 self.lbl_advantage.setText(adv)
                 self.lbl_advantage.setStyleSheet(f"color: {adv_color}; font-size: 10px; font-weight: bold;")
 
-            # Evaluation bar
-            bar_val = val + 1000
+            bar_val = user_val + 1000
             self.eval_bar.setValue(int(bar_val))
 
-            # Game info
             self._update_turn_display()
 
             if not self.can_show_coach():
@@ -977,27 +974,26 @@ class MainWindow(QMainWindow):
                     self.analysis_received = True
                 return
 
-            # Coach feedback
             feedback = "Position is balanced"
             feed_color = COLORS['text_dim']
-            if val > 300:
-                feedback = "White has a winning advantage"
+            if user_val > 300:
+                feedback = "You have a winning advantage"
                 feed_color = COLORS['green']
-            elif val > 100:
-                feedback = "White is better (+1 pawn advantage)"
+            elif user_val > 100:
+                feedback = "You are better (+1 pawn advantage)"
                 feed_color = COLORS['green']
-            elif val < -300:
-                feedback = "Black has a winning advantage"
+            elif user_val < -300:
+                feedback = "Opponent has a winning advantage"
                 feed_color = COLORS['red']
-            elif val < -100:
-                feedback = "Black is better (-1 pawn advantage)"
+            elif user_val < -100:
+                feedback = "Opponent is better (-1 pawn advantage)"
                 feed_color = COLORS['red']
 
-            prev = getattr(self, 'prev_eval', None)
+            prev = self.prev_eval if self.has_prev_eval else None
             if prev is not None and not score.is_mate():
-                delta = cur_eval - prev
-                is_blunder = (self.user_color == chess.WHITE and delta < -1.0) or \
-                             (self.user_color == chess.BLACK and delta > 1.0)
+                prev_user = prev if self.user_color == chess.WHITE else -prev
+                delta = user_eval - prev_user
+                is_blunder = delta < -1.0
                 if is_blunder:
                     feedback = "BLUNDER! You lost advantage this move"
                     feed_color = COLORS['red']
@@ -1020,7 +1016,6 @@ class MainWindow(QMainWindow):
 
             self.lbl_feedback.setText(feedback)
 
-            # Best move + PV line
             pv = info.get("pv")
             if pv:
                 self.last_known_move = pv[0]
@@ -1034,7 +1029,7 @@ class MainWindow(QMainWindow):
             print(f"Analysis error: {e}")
 
     def can_show_coach(self):
-        return self.board.turn == self.user_color
+        return self.board.turn == self.user_color and not self.board.is_game_over()
 
     def _update_feedback(self):
         self._update_turn_display()
@@ -1089,6 +1084,8 @@ class MainWindow(QMainWindow):
             )
 
     def _heartbeat_check(self):
+        if self.board.is_game_over():
+            return
         if not self.can_show_coach():
             return
         if self.analysis_received:

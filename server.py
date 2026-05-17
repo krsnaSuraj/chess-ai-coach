@@ -23,7 +23,7 @@ class GameController:
         self.human_side = None
         self.game_phase = GamePhase.AWAITING_COLOR
         self.move_number = 1
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
         self.redo_stack = []
 
     def start_game(self, human_is_white: bool):
@@ -35,36 +35,41 @@ class GameController:
             self.redo_stack.clear()
 
     def record_move(self, move: chess.Move):
-        self.board.push(move)
-        self.redo_stack.clear()
-        if self.board.turn == chess.WHITE:
-            self.move_number += 1
-        if self.board.is_game_over():
-            self.game_phase = GamePhase.GAME_OVER
-
-    def undo(self):
-        if not self.board.move_stack:
-            return False
         with self.lock:
+            self.board.push(move)
+            self.redo_stack.clear()
+            if self.board.turn == chess.WHITE:
+                self.move_number += 1
+            if self.board.is_game_over():
+                self.game_phase = GamePhase.GAME_OVER
+
+    def undo(self) -> str | None:
+        with self.lock:
+            if self.game_phase != GamePhase.PLAYING:
+                return "No game in progress"
+            if not self.board.move_stack:
+                return "No moves to undo"
             move = self.board.pop()
             self.redo_stack.append(move)
             if self.board.turn == chess.BLACK:
                 self.move_number -= 1
             if self.game_phase == GamePhase.GAME_OVER:
                 self.game_phase = GamePhase.PLAYING
-        return True
+        return None
 
-    def redo(self):
-        if not self.redo_stack:
-            return False
+    def redo(self) -> str | None:
         with self.lock:
+            if self.game_phase != GamePhase.PLAYING:
+                return "No game in progress"
+            if not self.redo_stack:
+                return "No moves to redo"
             move = self.redo_stack.pop()
             self.board.push(move)
             if self.board.turn == chess.WHITE:
                 self.move_number += 1
             if self.board.is_game_over():
                 self.game_phase = GamePhase.GAME_OVER
-        return True
+        return None
 
 
 game_controller = GameController()
@@ -77,14 +82,26 @@ else:
     config = {}
 
 ENGINE_PATH = config.get("engine", {}).get("path", "stockfish.exe")
-MOVETIME = config.get("engine", {}).get("movetime", 2000) / 1000.0
-WEB_MOVETIME = 0.5  # 500ms for faster web responses
+WEB_MOVETIME = config.get("engine", {}).get("web_movetime", 0.5)
 
+_engine_lock = threading.Lock()
 engine = None
+
+
+def get_engine():
+    global engine
+    with _engine_lock:
+        if engine is None:
+            try:
+                engine = chess.engine.SimpleEngine.popen_uci(ENGINE_PATH)
+            except Exception as e:
+                print(f"Failed to start engine: {e}")
+                return None
+    return engine
+
 
 @asynccontextmanager
 async def lifespan(app):
-    # Pre-start engine so first request is fast
     get_engine()
     yield
     global engine
@@ -123,17 +140,6 @@ class HumanMoveRequest(BaseModel):
     move_uci: str
 
 
-def get_engine():
-    global engine
-    if engine is None:
-        try:
-            engine = chess.engine.SimpleEngine.popen_uci(ENGINE_PATH)
-        except Exception as e:
-            print(f"Failed to start engine: {e}")
-            return None
-    return engine
-
-
 @app.get("/api/health")
 def health_check():
     eng = get_engine()
@@ -160,10 +166,9 @@ def get_game_state():
 @app.post("/api/undo")
 def undo_move():
     try:
-        if game_controller.game_phase != GamePhase.PLAYING:
-            return _error_response("No game in progress")
-        if not game_controller.undo():
-            return _error_response("No moves to undo")
+        err = game_controller.undo()
+        if err:
+            return _error_response(err)
         return _build_response()
     except Exception as e:
         return _error_response(str(e))
@@ -172,10 +177,9 @@ def undo_move():
 @app.post("/api/redo")
 def redo_move():
     try:
-        if game_controller.game_phase != GamePhase.PLAYING:
-            return _error_response("No game in progress")
-        if not game_controller.redo():
-            return _error_response("No moves to redo")
+        err = game_controller.redo()
+        if err:
+            return _error_response(err)
         return _build_response()
     except Exception as e:
         return _error_response(str(e))
@@ -184,17 +188,16 @@ def redo_move():
 @app.post("/api/human_move")
 def human_move(request: HumanMoveRequest):
     try:
-        if game_controller.game_phase != GamePhase.PLAYING:
-            return _error_response("Game not in progress")
-
         try:
             move = chess.Move.from_uci(request.move_uci)
-            if move not in game_controller.board.legal_moves:
-                return _error_response("Illegal move")
         except Exception:
             return _error_response("Invalid move format")
 
         with game_controller.lock:
+            if game_controller.game_phase != GamePhase.PLAYING:
+                return _error_response("Game not in progress")
+            if move not in game_controller.board.legal_moves:
+                return _error_response("Illegal move")
             game_controller.record_move(move)
 
         return _build_response()
@@ -203,21 +206,25 @@ def human_move(request: HumanMoveRequest):
 
 
 def _build_response() -> UnifiedResponse:
-    mode = "idle"
-    if game_controller.game_phase == GamePhase.PLAYING:
-        mode = "coach"
-    elif game_controller.game_phase == GamePhase.GAME_OVER:
+    with game_controller.lock:
         mode = "idle"
+        if game_controller.game_phase == GamePhase.PLAYING:
+            mode = "coach"
+        elif game_controller.game_phase == GamePhase.GAME_OVER:
+            mode = "idle"
+
+        fen = game_controller.board.fen()
+        is_human_turn = (mode == "coach" and
+                         game_controller.board.turn == game_controller.human_side)
 
     coach_data = None
-    if mode == "coach":
-        if game_controller.board.turn == game_controller.human_side:
-            coach_data = _run_coach_analysis_safe()
+    if is_human_turn:
+        coach_data = _run_coach_analysis_safe()
 
     return UnifiedResponse(
         ok=True,
         mode=mode,
-        fen=game_controller.board.fen(),
+        fen=fen,
         move=None,
         coach=coach_data,
         error=None
@@ -225,10 +232,12 @@ def _build_response() -> UnifiedResponse:
 
 
 def _error_response(msg: str) -> UnifiedResponse:
+    with game_controller.lock:
+        fen = game_controller.board.fen()
     return UnifiedResponse(
         ok=False,
         mode="idle",
-        fen=game_controller.board.fen(),
+        fen=fen,
         error=msg
     )
 
@@ -238,10 +247,15 @@ def _run_coach_analysis_safe() -> dict | None:
     if eng is None:
         return None
     try:
-        info = eng.analyse(game_controller.board, chess.engine.Limit(time=WEB_MOVETIME))
+        with game_controller.lock:
+            board_snapshot = game_controller.board.copy()
+        info = eng.analyse(board_snapshot, chess.engine.Limit(time=WEB_MOVETIME))
         score = info.get("score")
-        cp = score.white().score(mate_score=10000)
-        mate = score.white().mate()
+        if score is None:
+            return None
+
+        cp = score.relative.score(mate_score=10000)
+        mate = score.relative.mate()
         depth = info.get("depth", 0)
 
         if mate is not None:
@@ -278,9 +292,8 @@ class _NoCacheStaticFiles(StaticFiles):
 app.mount("/", _NoCacheStaticFiles(directory="static", html=True), name="static")
 
 if __name__ == "__main__":
-    import uvicorn, socket, subprocess
+    import uvicorn, socket
 
-    # Validate setup before starting
     errors = []
     static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
     if not os.path.exists(static_dir):
@@ -303,7 +316,6 @@ if __name__ == "__main__":
         print()
         exit(1)
 
-    # Find a free port
     port = 8000
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:

@@ -9,6 +9,7 @@ Usage:
 
 import sys
 import os
+import socket
 
 def main():
     args = [a.lower() for a in sys.argv[1:]]
@@ -30,8 +31,7 @@ def main():
         sys.exit(app.exec())
 
     else:
-        import uvicorn, socket
-        from server import app
+        import uvicorn
 
         port = 8000
         for a in args:
@@ -50,8 +50,15 @@ def main():
             port = sock.getsockname()[1]
             sock.close()
 
-        hostname = socket.gethostname()
-        local_ip = socket.gethostbyname(hostname)
+        local_ip = "127.0.0.1"
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            local_ip = s.getsockname()[0]
+            s.close()
+        except Exception:
+            pass
+
         print()
         print("=" * 50)
         print("  Chess Coach Web Server is running!")

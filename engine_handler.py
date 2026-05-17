@@ -47,10 +47,16 @@ class EngineHandler(QObject):
     def stop_engine(self):
         self._stop_current_thread_async()
         if self.engine:
-            self.engine.quit()
+            try:
+                self.engine.quit()
+            except Exception:
+                pass
             self.engine = None
 
     def start_analysis(self, board):
+        if not self.engine:
+            self.error_occurred.emit("Engine not started")
+            return
         val_snapshot = board.copy()
         self.pending_board = val_snapshot
 
@@ -118,6 +124,8 @@ class AnalysisThread(QThread):
                     self.info_received.emit(info)
         except Exception as e:
             print(f"Analysis thread error: {e}")
+        finally:
+            self.is_running = False
 
     def stop(self):
         self.is_running = False
