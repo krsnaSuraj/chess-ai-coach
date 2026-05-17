@@ -127,6 +127,7 @@
     <h2>Select Your Color</h2>
     <button class="color-btn" onclick="initGame(true)">Play as White</button>
     <button class="color-btn" onclick="initGame(false)">Play as Black</button>
+    <button class="color-btn" onclick="initGame(null)">Both (Analysis)</button>
 </div>
 
 <div class="status-bar">
@@ -180,10 +181,11 @@ function initGame(isWhite) {
     STATE.isWhite = isWhite;
     document.getElementById('modal').classList.add('hidden');
 
+    const orientation = isWhite === null ? 'white' : (isWhite ? 'white' : 'black');
     STATE.board = Chessboard('board', {
         draggable: true,
         position: 'start',
-        orientation: isWhite ? 'white' : 'black',
+        orientation: orientation,
         pieceTheme: 'img/chesspieces/wikipedia/{piece}.png',
         onDragStart,
         onDrop,
@@ -198,7 +200,7 @@ function initGame(isWhite) {
 
 function onDragStart(source, piece) {
     if (STATE.busy || STATE.game.game_over()) return false;
-    if ((STATE.game.turn() === 'w') !== STATE.isWhite) return false;
+    if (STATE.isWhite !== null && (STATE.game.turn() === 'w') !== STATE.isWhite) return false;
     return true;
 }
 
@@ -299,13 +301,24 @@ function renderCoach(coach) {
     let label = '', color = '#8b949e';
 
     if (coach.eval.includes('M')) {
-        label = coach.eval.startsWith('+') ? 'Mate for you' : 'Mate against you';
-        color = coach.eval.startsWith('+') ? '#3fb950' : '#f85149';
+        if (STATE.isWhite === null) {
+            label = coach.eval.startsWith('+') ? 'White can mate' : 'Black can mate';
+            color = coach.eval.startsWith('+') ? '#3fb950' : '#f85149';
+        } else {
+            label = coach.eval.startsWith('+') ? 'Mate for you' : 'Mate against you';
+            color = coach.eval.startsWith('+') ? '#3fb950' : '#f85149';
+        }
     } else {
         const n = parseFloat(coach.eval);
-        if (n > 0.30)     { label = 'You are better';       color = '#3fb950'; }
-        else if (n < -0.30) { label = 'Opponent is better';   color = '#f85149'; }
-        else                { label = 'Position is equal';     color = '#8b949e'; }
+        if (STATE.isWhite === null) {
+            if (n > 0.30)      { label = 'White is better';     color = '#3fb950'; }
+            else if (n < -0.30) { label = 'Black is better';     color = '#f85149'; }
+            else                { label = 'Position is equal';   color = '#8b949e'; }
+        } else {
+            if (n > 0.30)      { label = 'You are better';       color = '#3fb950'; }
+            else if (n < -0.30) { label = 'Opponent is better';   color = '#f85149'; }
+            else                { label = 'Position is equal';     color = '#8b949e'; }
+        }
     }
 
     document.getElementById('eval').textContent = coach.eval;

@@ -1,9 +1,9 @@
 engine:
   path: "stockfish.exe"
   threads: 2
-  hash: 1024
+  hash: 64
   movetime: 2000
-  web_movetime: 0.5
+  web_movetime: 0.15
 
 display:
   dark_square: "#B58863"

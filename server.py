@@ -25,19 +25,28 @@ class GameController:
         self.move_number = 1
         self.lock = threading.RLock()
         self.redo_stack = []
+        self.cached_coach = None
+        self.cached_fen = None
 
-    def start_game(self, human_is_white: bool):
+    def start_game(self, human_is_white: bool | None):
         with self.lock:
             self.board.reset()
-            self.human_side = chess.WHITE if human_is_white else chess.BLACK
+            if human_is_white is None:
+                self.human_side = None
+            else:
+                self.human_side = chess.WHITE if human_is_white else chess.BLACK
             self.move_number = 1
             self.game_phase = GamePhase.PLAYING
             self.redo_stack.clear()
+            self.cached_coach = None
+            self.cached_fen = None
 
     def record_move(self, move: chess.Move):
         with self.lock:
             self.board.push(move)
             self.redo_stack.clear()
+            self.cached_coach = None
+            self.cached_fen = None
             if self.board.turn == chess.WHITE:
                 self.move_number += 1
             if self.board.is_game_over():
@@ -55,6 +64,8 @@ class GameController:
                 self.move_number -= 1
             if self.game_phase == GamePhase.GAME_OVER:
                 self.game_phase = GamePhase.PLAYING
+            self.cached_coach = None
+            self.cached_fen = None
         return None
 
     def redo(self) -> str | None:
@@ -69,6 +80,8 @@ class GameController:
                 self.move_number += 1
             if self.board.is_game_over():
                 self.game_phase = GamePhase.GAME_OVER
+            self.cached_coach = None
+            self.cached_fen = None
         return None
 
 
@@ -133,7 +146,7 @@ class UnifiedResponse(BaseModel):
 
 
 class StartGameRequest(BaseModel):
-    human_is_white: bool
+    human_is_white: bool | None = None
 
 
 class HumanMoveRequest(BaseModel):
@@ -214,12 +227,21 @@ def _build_response() -> UnifiedResponse:
             mode = "idle"
 
         fen = game_controller.board.fen()
-        is_human_turn = (mode == "coach" and
-                         game_controller.board.turn == game_controller.human_side)
+        is_human_turn = (
+            mode == "coach" and (
+                game_controller.human_side is None or
+                game_controller.board.turn == game_controller.human_side
+            )
+        )
+        cache_hit = (game_controller.cached_fen == fen)
+        cached = game_controller.cached_coach if cache_hit else None
 
-    coach_data = None
-    if is_human_turn:
+    coach_data = cached
+    if is_human_turn and not cache_hit:
         coach_data = _run_coach_analysis_safe()
+        with game_controller.lock:
+            game_controller.cached_coach = coach_data
+            game_controller.cached_fen = fen
 
     return UnifiedResponse(
         ok=True,

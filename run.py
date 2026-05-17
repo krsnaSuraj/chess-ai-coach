@@ -32,6 +32,7 @@ def main():
 
     else:
         import uvicorn
+        from server import app
 
         port = 8000
         for a in args:

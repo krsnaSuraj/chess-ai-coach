@@ -409,11 +409,20 @@ class MainWindow(QMainWindow):
         self.board = chess.Board()
 
         from PyQt6.QtWidgets import QInputDialog
-        items = ["White", "Black"]
+        items = ["White", "Black", "Both"]
         item, ok = QInputDialog.getItem(self, "Play as",
                                         "Select your color:", items, 0, False)
-        self.user_color = chess.WHITE if (ok and item == "White") else chess.BLACK
-        self.board_flipped = (self.user_color == chess.BLACK)
+        if not ok:
+            sys.exit(0)
+        if item == "Both":
+            self.user_color = None
+            self.board_flipped = False
+        elif item == "White":
+            self.user_color = chess.WHITE
+            self.board_flipped = False
+        else:
+            self.user_color = chess.BLACK
+            self.board_flipped = True
 
         self.engine_handler = EngineHandler(self.config)
         self.engine_handler.analysis_update.connect(self._on_analysis)
@@ -766,13 +775,20 @@ class MainWindow(QMainWindow):
     def _new_game(self):
         try:
             from PyQt6.QtWidgets import QInputDialog
-            items = ["White", "Black"]
+            items = ["White", "Black", "Both"]
             item, ok = QInputDialog.getItem(self, "Play as",
                                             "Select your color:", items, 0, False)
             if not ok:
                 return
-            self.user_color = chess.WHITE if item == "White" else chess.BLACK
-            self.board_flipped = (self.user_color == chess.BLACK)
+            if item == "Both":
+                self.user_color = None
+                self.board_flipped = False
+            elif item == "White":
+                self.user_color = chess.WHITE
+                self.board_flipped = False
+            else:
+                self.user_color = chess.BLACK
+                self.board_flipped = True
 
             self.engine_handler.stop_analysis()
             self.board.reset()
@@ -901,11 +917,12 @@ class MainWindow(QMainWindow):
                 val = max(-1000, min(1000, cp))
                 cur_eval = cp / 100.0
 
-            user_eval = cur_eval if self.user_color == chess.WHITE else -cur_eval
-            user_val = val if self.user_color == chess.WHITE else -val
+            user_eval = cur_eval if self.user_color != chess.BLACK else -cur_eval
+            user_val = val if self.user_color != chess.BLACK else -val
 
             self.current_eval = cur_eval
-            self.has_prev_eval = True
+            if self.user_color is not None:
+                self.has_prev_eval = True
             depth = info.get("depth", 0)
 
             self.lbl_engine.setText(f"Depth {depth}  |  {info.get('seldepth', depth)}")
@@ -926,18 +943,32 @@ class MainWindow(QMainWindow):
             else:
                 adv = "Equal"
                 adv_color = COLORS['text_dim']
-                if user_eval > 0.5:
-                    adv = "You are winning"
-                    adv_color = COLORS['green']
-                elif user_eval > 0.2:
-                    adv = "You are better"
-                    adv_color = COLORS['green']
-                elif user_eval < -0.5:
-                    adv = "Opponent is winning"
-                    adv_color = COLORS['red']
-                elif user_eval < -0.2:
-                    adv = "Opponent is better"
-                    adv_color = COLORS['red']
+                if self.user_color is None:
+                    if user_eval > 0.5:
+                        adv = "White is winning"
+                        adv_color = COLORS['green']
+                    elif user_eval > 0.2:
+                        adv = "White is better"
+                        adv_color = COLORS['green']
+                    elif user_eval < -0.5:
+                        adv = "Black is winning"
+                        adv_color = COLORS['red']
+                    elif user_eval < -0.2:
+                        adv = "Black is better"
+                        adv_color = COLORS['red']
+                else:
+                    if user_eval > 0.5:
+                        adv = "You are winning"
+                        adv_color = COLORS['green']
+                    elif user_eval > 0.2:
+                        adv = "You are better"
+                        adv_color = COLORS['green']
+                    elif user_eval < -0.5:
+                        adv = "Opponent is winning"
+                        adv_color = COLORS['red']
+                    elif user_eval < -0.2:
+                        adv = "Opponent is better"
+                        adv_color = COLORS['red']
                 self.lbl_advantage.setText(adv)
                 self.lbl_advantage.setStyleSheet(f"color: {adv_color}; font-size: 10px; font-weight: bold;")
 
@@ -976,22 +1007,36 @@ class MainWindow(QMainWindow):
 
             feedback = "Position is balanced"
             feed_color = COLORS['text_dim']
-            if user_val > 300:
-                feedback = "You have a winning advantage"
-                feed_color = COLORS['green']
-            elif user_val > 100:
-                feedback = "You are better (+1 pawn advantage)"
-                feed_color = COLORS['green']
-            elif user_val < -300:
-                feedback = "Opponent has a winning advantage"
-                feed_color = COLORS['red']
-            elif user_val < -100:
-                feedback = "Opponent is better (-1 pawn advantage)"
-                feed_color = COLORS['red']
+            if self.user_color is None:
+                if user_val > 300:
+                    feedback = "White has a winning advantage"
+                    feed_color = COLORS['green']
+                elif user_val > 100:
+                    feedback = "White is better (+1 pawn advantage)"
+                    feed_color = COLORS['green']
+                elif user_val < -300:
+                    feedback = "Black has a winning advantage"
+                    feed_color = COLORS['red']
+                elif user_val < -100:
+                    feedback = "Black is better (-1 pawn advantage)"
+                    feed_color = COLORS['red']
+            else:
+                if user_val > 300:
+                    feedback = "You have a winning advantage"
+                    feed_color = COLORS['green']
+                elif user_val > 100:
+                    feedback = "You are better (+1 pawn advantage)"
+                    feed_color = COLORS['green']
+                elif user_val < -300:
+                    feedback = "Opponent has a winning advantage"
+                    feed_color = COLORS['red']
+                elif user_val < -100:
+                    feedback = "Opponent is better (-1 pawn advantage)"
+                    feed_color = COLORS['red']
 
             prev = self.prev_eval if self.has_prev_eval else None
             if prev is not None and not score.is_mate():
-                prev_user = prev if self.user_color == chess.WHITE else -prev
+                prev_user = prev if self.user_color != chess.BLACK else -prev
                 delta = user_eval - prev_user
                 is_blunder = delta < -1.0
                 if is_blunder:
@@ -1029,7 +1074,11 @@ class MainWindow(QMainWindow):
             print(f"Analysis error: {e}")
 
     def can_show_coach(self):
-        return self.board.turn == self.user_color and not self.board.is_game_over()
+        if self.board.is_game_over():
+            return False
+        if self.user_color is None:
+            return True
+        return self.board.turn == self.user_color
 
     def _update_feedback(self):
         self._update_turn_display()
