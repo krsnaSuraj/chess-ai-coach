@@ -409,15 +409,12 @@ class MainWindow(QMainWindow):
         self.board = chess.Board()
 
         from PyQt6.QtWidgets import QInputDialog
-        items = ["White", "Black", "Both"]
+        items = ["White", "Black"]
         item, ok = QInputDialog.getItem(self, "Play as",
                                         "Select your color:", items, 0, False)
         if not ok:
             sys.exit(0)
-        if item == "Both":
-            self.user_color = None
-            self.board_flipped = False
-        elif item == "White":
+        if item == "White":
             self.user_color = chess.WHITE
             self.board_flipped = False
         else:
@@ -458,7 +455,7 @@ class MainWindow(QMainWindow):
 
         self.chess_board = ChessBoard(self.config)
         self.chess_board.set_flipped(self.board_flipped)
-        self.chess_board.playable_side = self.user_color
+        self.chess_board.playable_side = None
         self.chess_board.set_board(self.board)
         self.chess_board.move_made.connect(self._on_move)
         layout.addWidget(self.chess_board, stretch=3)
@@ -775,15 +772,12 @@ class MainWindow(QMainWindow):
     def _new_game(self):
         try:
             from PyQt6.QtWidgets import QInputDialog
-            items = ["White", "Black", "Both"]
+            items = ["White", "Black"]
             item, ok = QInputDialog.getItem(self, "Play as",
                                             "Select your color:", items, 0, False)
             if not ok:
                 return
-            if item == "Both":
-                self.user_color = None
-                self.board_flipped = False
-            elif item == "White":
+            if item == "White":
                 self.user_color = chess.WHITE
                 self.board_flipped = False
             else:
@@ -815,7 +809,7 @@ class MainWindow(QMainWindow):
             self.lbl_engine.setText("Ready")
             self.eval_bar.setValue(1000)
             self.chess_board.set_flipped(self.board_flipped)
-            self.chess_board.playable_side = self.user_color
+            self.chess_board.playable_side = None
             self.chess_board.set_board(self.board)
             self._update_feedback()
         except Exception as e:
@@ -1076,8 +1070,6 @@ class MainWindow(QMainWindow):
     def can_show_coach(self):
         if self.board.is_game_over():
             return False
-        if self.user_color is None:
-            return True
         return self.board.turn == self.user_color
 
     def _update_feedback(self):

@@ -28,13 +28,10 @@ class GameController:
         self.cached_coach = None
         self.cached_fen = None
 
-    def start_game(self, human_is_white: bool | None):
+    def start_game(self, human_is_white: bool):
         with self.lock:
             self.board.reset()
-            if human_is_white is None:
-                self.human_side = None
-            else:
-                self.human_side = chess.WHITE if human_is_white else chess.BLACK
+            self.human_side = chess.WHITE if human_is_white else chess.BLACK
             self.move_number = 1
             self.game_phase = GamePhase.PLAYING
             self.redo_stack.clear()
@@ -146,7 +143,7 @@ class UnifiedResponse(BaseModel):
 
 
 class StartGameRequest(BaseModel):
-    human_is_white: bool | None = None
+    human_is_white: bool
 
 
 class HumanMoveRequest(BaseModel):
@@ -228,10 +225,8 @@ def _build_response() -> UnifiedResponse:
 
         fen = game_controller.board.fen()
         is_human_turn = (
-            mode == "coach" and (
-                game_controller.human_side is None or
-                game_controller.board.turn == game_controller.human_side
-            )
+            mode == "coach" and
+            game_controller.board.turn == game_controller.human_side
         )
         cache_hit = (game_controller.cached_fen == fen)
         cached = game_controller.cached_coach if cache_hit else None

@@ -124,11 +124,10 @@
 <body>
 
 <div id="modal" class="modal-overlay">
-    <h2>Select Your Color</h2>
-    <button class="color-btn" onclick="initGame(true)">Play as White</button>
-    <button class="color-btn" onclick="initGame(false)">Play as Black</button>
-    <button class="color-btn" onclick="initGame(null)">Both (Analysis)</button>
-</div>
+     <h2>Select Your Color</h2>
+     <button class="color-btn" onclick="initGame(true)">Play as White</button>
+     <button class="color-btn" onclick="initGame(false)">Play as Black</button>
+ </div>
 
 <div class="status-bar">
     <div class="status-text" id="status">Connecting...</div>
@@ -177,12 +176,12 @@ async function checkHealth() {
 
 checkHealth().catch(() => {});
 
-function initGame(isWhite) {
-    STATE.isWhite = isWhite;
-    document.getElementById('modal').classList.add('hidden');
+ function initGame(isWhite) {
+     STATE.isWhite = isWhite;
+     document.getElementById('modal').classList.add('hidden');
 
-    const orientation = isWhite === null ? 'white' : (isWhite ? 'white' : 'black');
-    STATE.board = Chessboard('board', {
+     const orientation = isWhite ? 'white' : 'black';
+     STATE.board = Chessboard('board', {
         draggable: true,
         position: 'start',
         orientation: orientation,
@@ -198,11 +197,10 @@ function initGame(isWhite) {
         .catch(handleError);
 }
 
-function onDragStart(source, piece) {
-    if (STATE.busy || STATE.game.game_over()) return false;
-    if (STATE.isWhite !== null && (STATE.game.turn() === 'w') !== STATE.isWhite) return false;
-    return true;
-}
+ function onDragStart(source, piece) {
+     if (STATE.busy || STATE.game.game_over()) return false;
+     return true;
+ }
 
 async function onDrop(source, target) {
     const moveObj = STATE.game.move({ from: source, to: target, promotion: 'q' });
@@ -297,39 +295,28 @@ function processResponse(data) {
     }
 }
 
-function renderCoach(coach) {
-    let label = '', color = '#8b949e';
+ function renderCoach(coach) {
+     let label = '', color = '#8b949e';
 
-    if (coach.eval.includes('M')) {
-        if (STATE.isWhite === null) {
-            label = coach.eval.startsWith('+') ? 'White can mate' : 'Black can mate';
-            color = coach.eval.startsWith('+') ? '#3fb950' : '#f85149';
-        } else {
-            label = coach.eval.startsWith('+') ? 'Mate for you' : 'Mate against you';
-            color = coach.eval.startsWith('+') ? '#3fb950' : '#f85149';
-        }
-    } else {
-        const n = parseFloat(coach.eval);
-        if (STATE.isWhite === null) {
-            if (n > 0.30)      { label = 'White is better';     color = '#3fb950'; }
-            else if (n < -0.30) { label = 'Black is better';     color = '#f85149'; }
-            else                { label = 'Position is equal';   color = '#8b949e'; }
-        } else {
-            if (n > 0.30)      { label = 'You are better';       color = '#3fb950'; }
-            else if (n < -0.30) { label = 'Opponent is better';   color = '#f85149'; }
-            else                { label = 'Position is equal';     color = '#8b949e'; }
-        }
-    }
+     if (coach.eval.includes('M')) {
+         label = coach.eval.startsWith('+') ? 'Mate for you' : 'Mate against you';
+         color = coach.eval.startsWith('+') ? '#3fb950' : '#f85149';
+     } else {
+         const n = parseFloat(coach.eval);
+         if (n > 0.30)      { label = 'You are better';       color = '#3fb950'; }
+         else if (n < -0.30) { label = 'Opponent is better';   color = '#f85149'; }
+         else                { label = 'Position is equal';     color = '#8b949e'; }
+     }
 
-    document.getElementById('eval').textContent = coach.eval;
-    document.getElementById('eval').style.color = color;
-    document.getElementById('evalLabel').textContent = label;
-    document.getElementById('evalLabel').style.color = color;
+     document.getElementById('eval').textContent = coach.eval;
+     document.getElementById('eval').style.color = color;
+     document.getElementById('evalLabel').textContent = label;
+     document.getElementById('evalLabel').style.color = color;
 
-    if (coach.best_move) {
-        drawArrow(coach.best_move.substring(0,2), coach.best_move.substring(2,4));
-    }
-}
+     if (coach.best_move) {
+         drawArrow(coach.best_move.substring(0,2), coach.best_move.substring(2,4));
+     }
+ }
 
 document.addEventListener('keydown', function(e) {
     if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undoMove(); }
